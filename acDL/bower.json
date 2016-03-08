@@ -1,0 +1,22 @@
+{
+  "name": "helloworld",
+  "description": "",
+  "main": "index.html",
+  "authors": [
+    "dsportes <daniel.sportes@laposte.net>"
+  ],
+  "license": "MIT",
+  "moduleType": [],
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.3.1"
+  }
+}
