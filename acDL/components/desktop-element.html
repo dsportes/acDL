@@ -100,6 +100,10 @@
 	
 	scan : function(dirpath){
 		this.dirpath = dirpath;
+		if (dirpath != this.prefs.dir) {
+			this.prefs.dir = dirpath;
+			this.savePrefs();
+		}
 		this.alldirs = [[],[],[]];
 		var self = this;
 		this.fs.readdir(dirpath, function(err, files){
@@ -133,6 +137,33 @@
 		}
 	},
 	
+	url : function(ptd){
+		return this.prefs["url" + ["P", "T", "D"][ptd]];
+	},
+
+	pwd : function(ptd){
+		return this.prefs["pwd" + ["P", "T", "D"][ptd]];
+	},
+
+	savePrefs : function(){
+		var data = JSON.stringify(this.prefs);
+		this.fs.writeFile(this.prefsfile, data, function(err) {
+		    if(err) {
+		        alert("La sauvegard des préférences (.acSvgRst) dans le home a échoué") ;
+		    }
+		}); 
+	},
+	
+	loadPrefs : function(data){
+		// {dir: urlP: pwdP: urlT: ... }
+		this.prefs = {};
+		try {
+			this.prefs = JSON.parse(data);
+		} catch (e) { }
+		if (this.prefs.dir)
+			this.scan(this.prefs.dir);
+	},
+	
     ready: function() {
 		AC.desktop = this;
 		var self = this;
@@ -141,7 +172,13 @@
 		this.$.fileElem.addEventListener("change", function(){
 			self.scan(this.files[0].path);
 		});
-		this.scan("d:/acSvgRst");
+		this.homedir = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME" ];
+		this.prefsfile = this.homedir + "/.acSvgRst.json";
+		this.fs.readFile(this.prefsfile, 'utf-8', function(err, data) {
+			var txt = err ? "{}" : data;
+			self.loadPrefs(data);
+		});
+    },
 		
 //       var img = this.$.img;
 //       var ifr = this.$.ifr;
@@ -181,10 +218,7 @@
 // 	      		};
 // 	      	srv.dump(line);
 // 		}
-    },
     	
-	
-
   });
 </script>
 </dom-module>
