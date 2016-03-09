@@ -1,0 +1,183 @@
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<dom-module id="fwk-styles">
+  <template>
+    <style>
+    :root {
+	    --input-std1: {
+	      margin-bottom: 1px;
+	      border-bottom: 1px solid var(--paper-light-blue-500);
+	      border-top: none;
+	      border-left: none;
+	      border-right: none;
+	      box-sizing: border-box;
+	      @apply(--paper-font-code2);
+	    };
+	
+	    --input-std1-focus: {
+	      margin-bottom: 0;
+	      border-bottom: 2px solid var(--paper-light-blue-500);
+	      border-top: none;
+	      border-left: none;
+	      border-right: none;
+	      box-sizing: border-box;
+	      outline: none;
+	      @apply(--paper-font-code2);
+	    };
+	
+	    --input-std2: {
+	      padding: 1px;
+	      border: 1px solid var(--paper-light-blue-500);
+	      box-sizing: border-box;
+	      outline: none;
+	      -webkit-appearance : none;
+	      @apply(--paper-font-code2);
+	    };
+	
+	    --input-std2-focus: {
+	      padding: 0;
+	      border: 2px solid var(--paper-light-blue-500);
+	      box-sizing: border-box;
+	      outline: none;
+	      @apply(--paper-font-code2);
+	    };
+
+	    --input-std10: {
+	      padding: 1px;
+	      border: 1px solid var(--paper-light-blue-500);
+	      box-sizing: border-box;
+	      outline: none;
+	      -webkit-appearance : none;
+	      @apply(--paper-font-code10);
+	    };
+	
+	    --input-std10-focus: {
+	      padding: 0;
+	      border: 2px solid var(--paper-light-blue-500);
+	      box-sizing: border-box;
+	      outline: none;
+	      @apply(--paper-font-code10);
+	    };
+	  
+	    --paper-font-title2: {
+	      /* @apply(--paper-font-common-base) */
+	      font-family: 'Roboto', 'Noto', sans-serif;
+	      -webkit-font-smoothing: antialiased;
+	      /* @apply(--paper-font-common-expensive-kerning); */
+	      text-rendering: optimizeLegibility;
+	      /* @apply(--paper-font-common-nowrap); */
+	      overflow: hidden;
+	      font-size: 20px;
+	      font-weight: 500;
+	      line-height: 28px;
+	    };
+	    
+  	    --paper-font-title3: {
+	      /* @apply(--paper-font-common-base) */
+	      font-family: 'Roboto', 'Noto', sans-serif;
+	      -webkit-font-smoothing: antialiased;
+	      /* @apply(--paper-font-common-expensive-kerning); */
+	      text-rendering: optimizeLegibility;
+	      /* @apply(--paper-font-common-nowrap); */
+	      overflow: hidden;
+	      font-size: 30px;
+	      font-weight: 500;
+	      line-height: 28px;
+	    };
+	
+	     --paper-font-label2: {
+	      /* @apply(--paper-font-common-base) */
+	      font-family: 'Roboto', 'Noto', sans-serif;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 12px;
+	      font-weight: 400;
+	      line-height: 14px;
+	    };
+	
+	     --paper-font-label1: {
+	      /* @apply(--paper-font-common-base) */
+	      font-family: 'Roboto', 'Noto', sans-serif;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 10px;
+	      font-weight: 400;
+	      line-height: 12px;
+	    };
+
+	    --paper-font-body3: {
+	      /* @apply(--paper-font-common-base) */
+	      font-family: 'Roboto', 'Noto', sans-serif;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 16px;
+	      font-weight: 500;
+	      line-height: 24px;
+	    };
+
+	    --paper-font-code3: {
+	      /* @apply(--paper-font-common-code); */
+	      font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 15px;
+	      font-weight: 900;
+	      line-height: 20px;
+	    };
+	    
+	    --paper-font-code1: {
+	      /* @apply(--paper-font-common-code); */
+	      font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 14px;
+	      font-weight: 500;
+	      line-height: 20px;
+	    };
+	
+	    --paper-font-code10: {
+	      /* @apply(--paper-font-common-code); */
+	      font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 10px;
+	      font-weight: 500;
+	      line-height: 20px;
+	    };
+
+	    --paper-font-code12: {
+	      /* @apply(--paper-font-common-code); */
+	      font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', 'Monaco', 'Menlo', monospace;
+	      -webkit-font-smoothing: antialiased;
+	      font-size: 12px;
+	      font-weight: 500;
+	      line-height: 20px;
+	    };
+	
+		--icon-button1: {
+			width: 24px; 
+			height: 24px; 
+	    	padding: 4px; 
+	    	border-radius:16px; 
+	    	-webkit-border-radius: 16px; 
+	    	z-index:1;
+	    	color:white; 
+	    	cursor:pointer;
+		};
+    }
+    
+    .disabled { opacity: 0.6; cursor: default !important; pointer-events: none; }
+        
+   	paper-button.blue { color: var(--paper-light-blue-500); --paper-button-flat-focus-color: var(--paper-light-blue-50); }
+    paper-button.blue:hover { background: var(--paper-light-blue-50); }
+	paper-button.orange { color: var(--paper-orange-900); --paper-button-flat-focus-color: var(--paper-orange-50); }
+    paper-button.orange:hover { background: var(--paper-orange-50); }
+    paper-button.hover:hover {  background: #eee; }
+    paper-button.ripple::shadow paper-ripple { color: var(--paper-pink-a200); }
+    paper-button.ripple paper-ripple { color: var(--paper-pink-a200);}
+    
+    paper-checkbox.blue {
+        --paper-checkbox-checked-color: var(--paper-light-blue-500);
+        --paper-checkbox-checked-ink-color: var(--paper-light-blue-500);
+        --paper-checkbox-unchecked-color: var(--paper-light-blue-900);
+        --paper-checkbox-unchecked-ink-color: var(--paper-light-blue-900);
+        @apply(--paper-font-label2);
+        margin: 2px 0;
+    }
+    
+    </style>
+  </template>
+</dom-module>

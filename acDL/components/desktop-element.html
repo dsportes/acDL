@@ -1,12 +1,190 @@
-<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="dir-panel.html">
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="desktop-element">
+<template>
+<style include="fwk-styles"></style>
+
+<style>
+	:host { @apply(--layout-vertical); height:100%; margin:0; padding:0; overflow:hidden; }
+	:host .topbar { }
+	:host dir-panel { @apply(--flex2); width:100%; min-height:150px;}
+	:host .title { text-align:right; @apply(--paper-font-title2); float:right; max-width:50%;}
+
+	:host .svg { width:100%; background-color: var(--paper-blue-grey-100); color:black;
+		padding:2px 5px; margin:0 0 5px 0; @apply(--paper-font-subhead);}
+
+	:host .svg2 { font-style:italic; }
+	:host .svg3 {font-weight:bold;}
+
+	:host .btnFile { 
+		@apply(--paper-font-body1);
+		background-color: white;
+		color: var(--paper-light-blue-900);
+		text-align: center; white-space: nowrap;
+		cursor: pointer;
+		border: 1px solid var(--paper-light-blue-500); border-radius: 5px; -webkit-border-radius: 5px;
+		overflow: hidden; max-width:45%; margin-bottom:15px; padding:0 5px;
+	}
+	:host .btnFile:hover { color:white;	background-color: var(--paper-light-blue-900);}
+	:host .fic { @apply(--paper-font-code1); font-weight:bold;}
+	:host .fic:hover { color: white;}
+	input[type="file"]#fileElem, #form1 { visibility:hidden; width:0; height:0;}
+</style>
+	<div class="topbar">
+		<div class="title">Dump / Load des bases Alterconsos</div>
+		<div class="btnFile" on-tap="btnFileClick">Folder de sauvegarde (cliquer pour changer)
+			<div class="fic">{{dirpath}}</div>
+			<form id="form1"><input type="file" id="fileElem" nwdirectory></form>
+		</div>
+		<div class="svg">
+			<template is="dom-if" if="[[!currentsvg]]" >
+			<div class="svg2">Aucune sauvegarde sélectionnée (load impossible)</div>
+			</template>
+			<template is="dom-if" if="[[currentsvg]]" >
+			<div>Sauvegarde sélectionnée : <span class="svg3">[[editSvg(currentsvgitem)]]</span></div>
+			</template>
+		</div>
+	</div>
+	
+	<dir-panel ptd="0" currentsvg="[[currentsvg]]"></dir-panel>
+	<dir-panel ptd="1" currentsvg="[[currentsvg]]"></dir-panel>
+	<dir-panel ptd="2" currentsvg="[[currentsvg]]"></dir-panel>
+	
+	<!-- 
+    <img id="img"></img>
+    <p id="info"></p>
+    <iframe id="ifr" style="width:200px; height:200px;"></iframe>
+     -->
+</template>
 
 <script>
-  // register a new element called proto-element
   Polymer({
-    is: "proto-element",
-    // add a callback to the element's prototype
+    is: "desktop-element",
+    
+	properties : {
+		dirpath : {type:String, value:"", notify:true},
+		alldirs : {type:Array, value:[[],[],[]]},
+		currentsvg : {type:String, value:""},
+		currentsvgitem : {type:Object, value:null}
+	},
+  	
+    btnFileClick : function(){
+		this.$.form1.reset();
+		this.$.fileElem.click();
+	},
+	
+	setDir : function(n) {
+		if (n.length != 16) return null;
+		var ptd = AC.Util.ptd(n);
+		if (ptd == -1) return null;
+		var c = n.charAt(15);
+		var complete = c == "C";
+		if (!complete && c != "P") return null;
+		var dh = AC.Util.editDH(n.substring(1, 15));
+		if (!dh) return null;
+		return {ptd:ptd, name:n, dh:dh, partielle:complete ? "" : "partielle"};
+	},
+	
+	sortDirs : function(dirs) {
+		if (!dirs || dirs.length < 2) return dirs;
+		dirs.sort(function(a,b){
+			return a.dh < b.dh ? -1 : (a.dh > b.dh ? 1 : 0);
+		});
+		for(var i = 0; i < dirs.length; i++) {
+			var d = dirs[i];
+			console.log("Dir : " + d.ptd + d.dh + d.partielle);
+		}
+	},
+	
+	scan : function(dirpath){
+		this.dirpath = dirpath;
+		this.alldirs = [[],[],[]];
+		var self = this;
+		this.fs.readdir(dirpath, function(err, files){
+			if (!err && files && files.length != 0) {
+				files.forEach(function(dir){
+					var d = self.setDir(dir);
+					if (d)
+						self.alldirs[d.ptd].push(d);
+				});
+				for(var i = 0; i < 3; i++) {
+					self.sortDirs(self.alldirs[i]);
+					AC.dirpanels[i].refresh(self.alldirs[i]);
+				}
+			};
+		});
+	},
+	
+	editSvg : function(x){
+		if (!x) return "";
+		return ["Prod ", "Test ", "Dev "][x.ptd] + x.dh + " " + x.partielle;
+	},
+	
+	selectSvg : function(svg){
+		var n = svg.name;
+		if (n == this.currentsvg) {
+			this.currentsvgitem = null;
+			this.currentsvg = "";
+		} else {
+			this.currentsvgitem = svg;
+			this.currentsvg = svg.name;
+		}
+	},
+	
     ready: function() {
-      this.textContent = "I'm a proto-element. Check out my prototype!"
-    }
+		AC.desktop = this;
+		var self = this;
+		this.fs = require("fs");
+		console.log(global.__dirname);
+		this.$.fileElem.addEventListener("change", function(){
+			self.scan(this.files[0].path);
+		});
+		this.scan("d:/acSvgRst");
+		
+//       var img = this.$.img;
+//       var ifr = this.$.ifr;
+     
+//       var JSZip = require("jszip");
+//       fs.readFile("test.zip", function(err, data) {
+//           if (err) throw err;
+//           var zip = new JSZip(data);
+//           for (var e in zip.files) {
+//            	if (e.indexOf("_HTML.") != -1) {
+//            		ifr.contentWindow.document.body.innerHTML = zip.file(e).asText();
+//             } else if (e.indexOf("_PHOTO.") != -1) {
+//           		var buf = zip.file(e).asArrayBuffer();
+//           		img.src = URL.createObjectURL(new Blob([buf]));
+//           	} else if (e.substring(e.length - 5) == ".json") {
+//           		var obj = JSON.parse(zip.file(e).asText());
+//           	}
+//           }
+//         });
+
+// 		var srv;
+// 		try {
+// 			srv = new Server("http://192.168.0.1:8080", "lesroses", "d:/acDL/T1/");
+// //			srv = new Server("https://alterconsos.appspot.com", "lesroses", "d:/acDL/T2/");
+// 		} catch (e) {
+// 			console.log(e.message);
+// 			srv = null;
+// 		}
+
+// 		if (srv) {
+// 			var line = "C.2.";
+// 			srv.onDone = function(error){
+// 		      		if (!error) 
+// 		      			console.log("Saved : " + line);
+// 		      		else
+// 		      			console.log(error);
+// 	      		};
+// 	      	srv.dump(line);
+// 		}
+    },
+    	
+	
+
   });
 </script>
+</dom-module>

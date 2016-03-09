@@ -1,0 +1,63 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="dir-panel">
+<template>
+<style include="fwk-styles"></style>
+
+<style>
+	:host { @apply(--layout-vertical); height:100%; margin:0; padding:0; overflow:hidden; }
+	:host .titleBar { width:100%; background-color: var(--paper-blue-grey-900); color:white;
+		padding:3px 5px; margin:0 0 10px 0; @apply(--paper-font-subhead);}
+	:host .listDirs {float:left; height:100%; overflow-y:auto; margin-right:20px;
+		@apply(--paper-font-label2); }
+	:host .dh {padding-right:10px;}
+	:host .item {cursor:pointer; background-color:white; color:black;}
+	:host .selitem {cursor:pointer; background-color: var(--paper-blue-grey-700); color:white;}
+	:host .item:hover, .selitem:hover { background-color: var(--paper-blue-grey-200); color:black; }
+</style>
+	<div class="titleBar">[[title(ptd)]]</div>
+	<div class="listDirs">
+	<table>
+		<template is="dom-repeat" items="[[dirs]]">
+			<tr><td class$="[[lookof(item, currentsvg)]]" on-tap="selectSvg">
+				<span class="dh">[[item.dh]]</span>
+				<span>[[item.partielle]]</span>
+			</td></tr>
+		</template>
+	</table>
+	</div>
+</template>
+
+<script>
+  Polymer({
+    is: "dir-panel",
+    
+	properties : {
+		dirs : {type:Array, value:[]},
+		ptd : {type:Number, value:0},
+		currentsvg : {type:String, value:""}
+	},
+  	
+	title : function(ptd) { return ["Production", "Test", "Développement"][ptd];},
+	
+	refresh : function(dirs) {
+		this.dirs = dirs;
+	},
+	
+	lookof : function(item, currentsvg){
+		return item.name == currentsvg ? "selitem" : "item";
+	},
+	
+    ready: function() {
+    	AC.dirpanels[this.ptd] = this;
+    },
+    
+	selectSvg : function(e){
+		var item = e.model.__data__.item;
+		AC.desktop.selectSvg(item);
+	}
+
+  });
+</script>
+</dom-module>
