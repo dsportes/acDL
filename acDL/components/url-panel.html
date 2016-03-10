@@ -1,0 +1,86 @@
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="url-panel">
+<template>
+<style include="fwk-styles"></style>
+
+<style>
+	:host {  }
+
+/* Error *********************************/
+	paper-dialog.size-position {
+      position:fixed; top:10%; right:10%; width:70%; overflow:hidden; }
+
+	.title { font-size:1.4rem; margin:1rem 0; color:var(--paper-indigo-900);}
+	
+	input[is=iron-input] { @apply(--input-std1); width: 95%; vertical-align:top;}
+    input[is=iron-input]:focus { @apply(--input-std1-focus); }
+    
+    :host .label {margin-top: 10px; @apply(--paper-font-label2);}
+    :host .input {margin: 0 0 10px 0;}
+    :host paper-button {padding:0.7em 0.57em; margin: 0 10px 0 0;}
+	
+</style>
+	<paper-dialog class="size-position" modal id="urlpanel">
+		<div class="title">URL / Mot de Passe : [[ptdtext]]</div>
+		
+		<div class="label">URL du server :</div>
+		<div class="input"><input is="iron-input" value="{{url::input}}"></div>
+		<div class="label">Mot de passe :</div>
+		<div class="input"><input is="iron-input" value="{{pwd::input}}"></div>
+		
+		<div>
+			<paper-button on-tap="valider" raised class$="[[validerclass(url,_url,pwd,_pwd)]]">Valider</paper-button>
+			<paper-button on-tap="fermer" raised class="blue ripple">Fermer</paper-button>
+		</div>
+    </paper-dialog>
+</template>
+</dom-module>
+
+<script>
+	Polymer({
+		is: 'url-panel',
+		properties : {
+			ptd : { type:Number, value:-1 },
+			url : {type:String, value:""},
+			_url : {type:String, value:""},
+			pwd : {type:String, value:""},
+			_pwd : {type:String, value:""},
+		},
+				
+		ready: function() {
+			AC.urlpanel = this;
+		},
+		
+		validerclass : function(url, _url, pwd, _pwd){
+			return url != _url || pwd != _pwd ? "orange ripple" : "blue ripple disabled";
+		},
+		
+		title : function(ptd){
+			return ["Production", "Test", "Développement"][ptd];
+		},
+
+		openPanel : function(ptd){
+			this.url = AC.desktop.url(ptd);
+			this.pwd = AC.desktop.pwd(ptd);
+			this._url = this.url;
+			this._pwd = this.pwd;
+			this.ptd = ptd;
+			this.$.urlpanel.open();
+		},
+
+		valider : function(){
+			AC.desktop.updateurlpwd(this.ptd, this.url, this.pwd);
+			this.fermer();
+		},
+
+		fermer : function(){
+			this.$.urlpanel.close();
+		}
+		
+	});
+</script>

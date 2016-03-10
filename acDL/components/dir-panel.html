@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="url-panel.html">
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="dir-panel">
@@ -6,27 +7,53 @@
 <style include="fwk-styles"></style>
 
 <style>
-	:host { @apply(--layout-vertical); height:100%; margin:0; padding:0; overflow:hidden; }
-	:host .titleBar { width:100%; background-color: var(--paper-blue-grey-900); color:white;
+	:host { }
+	:host .panel { @apply(--layout-vertical); height:100%; }
+	:host .titleBar { background-color: var(--paper-blue-grey-900); color:white;
 		padding:3px 5px; margin:0 0 10px 0; @apply(--paper-font-subhead);}
 	:host .listDirs {float:left; height:100%; overflow-y:auto; margin-right:20px;
 		@apply(--paper-font-label2); }
+	:host .subpanel { @apply(--flex); @apply(--layout-horizontal); justify-content:space-between;}
+	:host .subpaneld { @apply(--flex);}
+	
+	:host .lbtn {text-align:center; padding:3px 0;}
+	:host .url {float:right; margin-right:5px; font-style:italic; @apply(--paper-font-code1);}
+	
+	:host paper-button {border:1px solid rgba(3, 169, 244, 0.23); }
+	:host .btn2 { padding:0;}
+	
 	:host .dh {padding-right:10px;}
 	:host .item {cursor:pointer; background-color:white; color:black;}
 	:host .selitem {cursor:pointer; background-color: var(--paper-blue-grey-700); color:white;}
 	:host .item:hover, .selitem:hover { background-color: var(--paper-blue-grey-200); color:black; }
 </style>
-	<div class="titleBar">[[title(ptd)]]</div>
-	<div class="listDirs">
-	<table>
-		<template is="dom-repeat" items="[[dirs]]">
-			<tr><td class$="[[lookof(item, currentsvg)]]" on-tap="selectSvg">
-				<span class="dh">[[item.dh]]</span>
-				<span>[[item.partielle]]</span>
-			</td></tr>
-		</template>
-	</table>
+	<div class="panel">
+	<div class="titleBar"><div class="url">[[url]]</div>[[title(ptd)]]</div>
+	<div class="subpanel">
+		<table class="listDirs">
+			<template is="dom-repeat" items="[[dirs]]">
+				<tr><td class$="[[lookof(item, currentdump)]]" on-tap="selectSvg">
+					<span class="dh">[[item.dh]]</span>
+					<span>[[item.partiel]]</span>
+				</td></tr>
+			</template>
+		</table>
+		<div class="subpaneld">
+			<div class="lbtn">
+			<paper-button on-tap="editurl" class="btn2 blue ripple">URL/PWD</paper-button>
+			<paper-button on-tap="doon" class="btn2 blue ripple">On</paper-button>
+			<paper-button on-tap="dooff" class="btn2 blue ripple">Off</paper-button>
+			</div>
+			<div class="lbtn">
+			<paper-button on-tap="todump" class="blue ripple">Nouveau Dump</paper-button>
+			<paper-button on-tap="toload" class$="[[loadbtnclass(cd)]]">Load Dump</paper-button>
+			</div>
+		</div>
 	</div>
+	</div>
+	
+	<url-panel id="urlpanel" ptd="[[ptd]]"></url-panel>
+	
 </template>
 
 <script>
@@ -36,17 +63,28 @@
 	properties : {
 		dirs : {type:Array, value:[]},
 		ptd : {type:Number, value:0},
-		currentsvg : {type:String, value:""}
+		currentdump : {type:String, value:"", observer:"ondumpchange"},
+		cd : {type:Object, value:null},
+		url : {type:String, value:""}
 	},
-  	
+	  	
+	changeUrl : function(){
+		this.url = AC.desktop.url(this.ptd);
+	},
+	
+	loadbtnclass : function(cd){
+		return cd && !cd.partiel ? "blue ripple" : "blue ripple disabled";
+	},
+	
 	title : function(ptd) { return ["Production", "Test", "Développement"][ptd];},
 	
 	refresh : function(dirs) {
 		this.dirs = dirs;
+		this.changeUrl();
 	},
 	
-	lookof : function(item, currentsvg){
-		return item.name == currentsvg ? "selitem" : "item";
+	lookof : function(item, currentdump){
+		return item.name == currentdump ? "selitem" : "item";
 	},
 	
     ready: function() {
@@ -55,9 +93,32 @@
     
 	selectSvg : function(e){
 		var item = e.model.__data__.item;
-		AC.desktop.selectSvg(item);
-	}
+		AC.desktop.selectdump(item);
+	},
+	
+	todump : function(){
+		AC.desktop.changeView("dump");
+	},
 
+	toload : function(ptd){
+		AC.desktop.changeView("load");
+	},
+
+	ondumpchange : function(newvalue, oldvalue){
+		this.cd = newvalue ? AC.desktop.currentdumpitem : null;
+	},
+
+	doon : function(){
+		
+	},
+	
+	dooff : function(){
+		
+	},
+	
+	editurl : function() {
+		this.$.urlpanel.openPanel(this.ptd);
+	}
   });
 </script>
 </dom-module>

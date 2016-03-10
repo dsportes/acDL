@@ -1,0 +1,31 @@
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="load-view">
+<template>
+<style include="fwk-styles"></style>
+
+<style>
+    :host { background-color:white;}
+</style>
+	<h2>Load</h2>
+	<paper-button on-tap="versdesktop" class="blue ripple">Retour à la synthèse des dumps</paper-button>
+</template>
+</dom-module>
+
+<script>
+
+Polymer({
+	is : "load-view",
+	properties : {
+		ptd: {type:Number, value:-1}
+	},
+	ready: function() {
+		AC.loadview = this;
+	},
+	versdesktop : function(e){
+		AC.desktop.backtodesktop(this.ptd);
+	}
+});
+</script>

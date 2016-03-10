@@ -1,4 +1,13 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html">	
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+
+<link rel="import" href="dump-view.html">
+<link rel="import" href="load-view.html">
+<link rel="import" href="detail-view.html">
 <link rel="import" href="dir-panel.html">
 <link rel="import" href="fwk-styles.html">
 
@@ -7,16 +16,26 @@
 <style include="fwk-styles"></style>
 
 <style>
-	:host { @apply(--layout-vertical); height:100%; margin:0; padding:0; overflow:hidden; }
-	:host .topbar { }
-	:host dir-panel { @apply(--flex2); width:100%; min-height:150px;}
-	:host .title { text-align:right; @apply(--paper-font-title2); float:right; max-width:50%;}
+	:host { }
+	
+	neon-animated-pages { position:inherit;}
+	neon-animatable { @apply(--layout-center-center); overflow-y:auto; }
+		
+	:host .desktop { @apply(--layout-vertical); height:100%; }
+	:host .topbar {padding:2px; }
+	:host .panels { @apply(--flex); @apply(--layout-vertical); height:100%; 
+		padding:2px; overflow-y:auto;}
+	:host dir-panel { flex-grow:2; }
+	
+	:host .title { text-align:right; @apply(--paper-font-title2); 
+		float:right; max-width:50%; line-height:20px;}
+	
+	:host .dump { background-color: var(--paper-blue-grey-50); color:black;
+		padding:2px 5px; margin-top:5px; @apply(--paper-font-subhead);}
 
-	:host .svg { width:100%; background-color: var(--paper-blue-grey-100); color:black;
-		padding:2px 5px; margin:0 0 5px 0; @apply(--paper-font-subhead);}
-
-	:host .svg2 { font-style:italic; }
-	:host .svg3 {font-weight:bold;}
+	:host .dump2 { font-style:italic; }
+	:host .dump3 {font-weight:bold;}
+	:host #btndetail { float:right; border:1px solid rgba(3, 169, 244, 0.23); padding:0;}
 
 	:host .btnFile { 
 		@apply(--paper-font-body1);
@@ -25,32 +44,54 @@
 		text-align: center; white-space: nowrap;
 		cursor: pointer;
 		border: 1px solid var(--paper-light-blue-500); border-radius: 5px; -webkit-border-radius: 5px;
-		overflow: hidden; max-width:45%; margin-bottom:15px; padding:0 5px;
+		overflow: hidden; max-width:45%; padding:0 5px;
 	}
 	:host .btnFile:hover { color:white;	background-color: var(--paper-light-blue-900);}
 	:host .fic { @apply(--paper-font-code1); font-weight:bold;}
 	:host .fic:hover { color: white;}
 	input[type="file"]#fileElem, #form1 { visibility:hidden; width:0; height:0;}
 </style>
-	<div class="topbar">
-		<div class="title">Dump / Load des bases Alterconsos</div>
-		<div class="btnFile" on-tap="btnFileClick">Folder de sauvegarde (cliquer pour changer)
-			<div class="fic">{{dirpath}}</div>
-			<form id="form1"><input type="file" id="fileElem" nwdirectory></form>
+	<neon-animated-pages attr-for-selected="id" selected="[[viewname]]" 
+		entry-animation="slide-from-left-animation" exit-animation="slide-left-animation">
+		
+		<neon-animatable id="desktop">
+		<div class="desktop">
+			<div class="topbar">
+				<div class="title">Dump / Load des bases Alterconsos</div>
+				<div class="btnFile" on-tap="btnFileClick">Répertoire des dumps (cliquer pour changer)
+					<div class="fic">{{dirpath}}</div>
+					<form id="form1"><input type="file" id="fileElem" nwdirectory></form>
+				</div>
+				<div class="dump">
+					<template is="dom-if" if="[[!currentdump]]" >
+					<div class="dump2">Aucun dump sélectionné (load impossible)</div>
+					</template>
+					<template is="dom-if" if="[[currentdump]]" >
+					<paper-button id="btndetail" on-tap="todetail" class="blue ripple">Détail</paper-button>
+					<div>Dump sélectionné : <span class="dump3">[[editdump(currentdumpitem)]]</span></div>
+					</template>
+				</div>
+			</div>
+			<div class="panels">
+				<dir-panel ptd="0" currentdump="[[currentdump]]"></dir-panel>
+				<dir-panel ptd="1" currentdump="[[currentdump]]"></dir-panel>
+				<dir-panel ptd="2" currentdump="[[currentdump]]"></dir-panel>
+			</div>
 		</div>
-		<div class="svg">
-			<template is="dom-if" if="[[!currentsvg]]" >
-			<div class="svg2">Aucune sauvegarde sélectionnée (load impossible)</div>
-			</template>
-			<template is="dom-if" if="[[currentsvg]]" >
-			<div>Sauvegarde sélectionnée : <span class="svg3">[[editSvg(currentsvgitem)]]</span></div>
-			</template>
-		</div>
-	</div>
-	
-	<dir-panel ptd="0" currentsvg="[[currentsvg]]"></dir-panel>
-	<dir-panel ptd="1" currentsvg="[[currentsvg]]"></dir-panel>
-	<dir-panel ptd="2" currentsvg="[[currentsvg]]"></dir-panel>
+		</neon-animatable>
+		
+		<neon-animatable id="dump" ptd:"[[currentptd]]">
+			<dump-view></dump-view>
+		</neon-animatable>
+		<neon-animatable id="load" ptd:"[[currentptd]]">
+			<load-view></load-view>
+		</neon-animatable>
+		<neon-animatable id="detail" ptd:"[[currentptd]]">
+			<detail-view></detail-view>
+		</neon-animatable>
+		
+	</neon-animated-pages>
+
 	
 	<!-- 
     <img id="img"></img>
@@ -64,12 +105,26 @@
     is: "desktop-element",
     
 	properties : {
+		viewname : {type:String, value:"desktop"},
 		dirpath : {type:String, value:"", notify:true},
 		alldirs : {type:Array, value:[[],[],[]]},
-		currentsvg : {type:String, value:""},
-		currentsvgitem : {type:Object, value:null}
+		currentdump : {type:String, value:""},
+		currentdumpitem : {type:Object, value:null},
+		currentptd : {type:Number, value:-1}
 	},
   	
+	backtodesktop : function(ptd){
+		this.viewname = "desktop";
+	},
+
+	changeView : function(viewname) {
+		this.viewname = viewname;
+	},
+	
+	todetail : function(){
+		this.changeView("detail");
+	},
+
     btnFileClick : function(){
 		this.$.form1.reset();
 		this.$.fileElem.click();
@@ -84,7 +139,7 @@
 		if (!complete && c != "P") return null;
 		var dh = AC.Util.editDH(n.substring(1, 15));
 		if (!dh) return null;
-		return {ptd:ptd, name:n, dh:dh, partielle:complete ? "" : "partielle"};
+		return {ptd:ptd, name:n, dh:dh, partiel:complete ? "" : "partiel"};
 	},
 	
 	sortDirs : function(dirs) {
@@ -94,7 +149,7 @@
 		});
 		for(var i = 0; i < dirs.length; i++) {
 			var d = dirs[i];
-			console.log("Dir : " + d.ptd + d.dh + d.partielle);
+			console.log("Dir : " + d.ptd + d.dh + d.partiel);
 		}
 	},
 	
@@ -121,19 +176,19 @@
 		});
 	},
 	
-	editSvg : function(x){
+	editdump : function(x){
 		if (!x) return "";
-		return ["Prod ", "Test ", "Dev "][x.ptd] + x.dh + " " + x.partielle;
+		return ["Prod ", "Test ", "Dev "][x.ptd] + x.dh + " " + x.partiel;
 	},
 	
-	selectSvg : function(svg){
-		var n = svg.name;
-		if (n == this.currentsvg) {
-			this.currentsvgitem = null;
-			this.currentsvg = "";
+	selectdump : function(dump){
+		var n = dump.name;
+		if (n == this.currentdump) {
+			this.currentdumpitem = null;
+			this.currentdump = "";
 		} else {
-			this.currentsvgitem = svg;
-			this.currentsvg = svg.name;
+			this.currentdumpitem = dump;
+			this.currentdump = dump.name;
 		}
 	},
 	
@@ -145,13 +200,21 @@
 		return this.prefs["pwd" + ["P", "T", "D"][ptd]];
 	},
 
+	updateurlpwd : function(ptd, url, pwd){
+		this.prefs["pwd" + ["P", "T", "D"][ptd]] = pwd;
+		this.prefs["url" + ["P", "T", "D"][ptd]] = url;
+		this.savePrefs();
+	},
+	
 	savePrefs : function(){
 		var data = JSON.stringify(this.prefs);
 		this.fs.writeFile(this.prefsfile, data, function(err) {
 		    if(err) {
-		        alert("La sauvegard des préférences (.acSvgRst) dans le home a échoué") ;
+		        alert("La sauvegarde des préférences (.acdumpRst) dans le home a échoué") ;
 		    }
-		}); 
+		});
+		for(var i = 0; i < 3; i++) 
+			AC.dirpanels[i].changeUrl();
 	},
 	
 	loadPrefs : function(data){
@@ -162,6 +225,8 @@
 		} catch (e) { }
 		if (this.prefs.dir)
 			this.scan(this.prefs.dir);
+		for(var i = 0; i < 3; i++) 
+			AC.dirpanels[i].changeUrl();
 	},
 	
     ready: function() {
