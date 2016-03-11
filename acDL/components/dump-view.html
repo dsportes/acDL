@@ -8,9 +8,55 @@
 
 <style>
     :host { width:100%; }
+    :host .title { @apply(--paper-font-title2); color:var(--paper-indigo-a700); 
+    	padding:10px 0 20px 10px; }
+    :host .filtre { margin:10px, padding:5px; border:1px solid var(--paper-indigo-a500);
+    	border-radius:10px; -webkit-border-radius:10px;}
+    input[is=iron-input] { @apply(--input-std1); width: 95%; vertical-align:top;}
+    input[is=iron-input]:focus { @apply(--input-std1-focus); }
+    
+    :host .label {margin-top: 10px; @apply(--paper-font-label2);}
+    :host .input {margin: 0 0 10px 0;}
+    
 </style>
-	<h2>Dump</h2>
-	<paper-button on-tap="versdesktop" class="blue ripple">Retour à la synthèse des dumps</paper-button>
+	<paper-button on-tap="versdesktop" raised class$="[[backClass(status)]]">Retour à la synthèse des dumps</paper-button>
+	<div class="title">Dump [[type]] : [[name]]</div>
+
+	<div class$="[[filtreClass(status)]]">
+		<div class="label">Cellules modifiées après (AAAAMMJJhhmmss) :</div>
+		<div class="input"><input is="iron-input" value="{{version::input}}"></div>
+		<div class="label">Lignes commençant par (C.1. P.2. ...) :</div>
+		<div class="input"><input is="iron-input" value="{{line::input}}"></div>
+		<div class="label">Colonnes commençant par (C.1. P.2. ...) :</div>
+		<div class="input"><input is="iron-input" value="{{col::input}}"></div>
+		<div class="label">D'un des types suivants (GAC GAP ...) :</div>
+		<div class="input"><input is="iron-input" value="{{type::input}}"></div>
+		<div class="label">Documents créés depuis (AAAAMMJJ) :</div>
+		<div class="input"><input is="iron-input" value="{{versiond::input}}"></div>
+	</div>
+	
+	<div>
+	<template is="dom-if" if="[[!encours(status)]]" >
+		<paper-button on-tap="dump" raised class="orange ripple">Nouveau Dump</paper-button>
+	</template>
+	<template is="dom-if" if="[[encours(status)]]" >
+		<template is="dom-if" if="[[!pause]]" >
+			<paper-button on-tap="pause" raised class="blue ripple">Pause</paper-button>
+		</template>
+		<template is="dom-if" if="[[pause]]" >
+			<paper-button on-tap="reprise" raised class="blue ripple">Reprise</paper-button>
+			<paper-button on-tap="abandon" raised class="blue ripple">Abandon</paper-button>
+		</template>
+	</template>
+	</div>
+	
+	<template is="dom-if" if="[[encours(status)]]" >
+		<div>[[phase]]</div>
+		<div hidden$="p1(status)">Ligne [[cl]] sur [[nbl]] - Volume compressé chargé : [[vc]]</div>
+		<div hidden$="p2(status)">Document [[cd]] sur [[nbd]] - Volume des documents chargés : [[vd]]</div>
+		<div class="error">[[error]]</div>
+	</template>	
+	
 </template>
 </dom-module>
 
@@ -19,13 +65,124 @@
 Polymer({
 	is : "dump-view",
 	properties : {
-		ptd: {type:Number, value:-1}
+		ptd: {type:Number, value:-1},
+		ptdname: {type:String, value:""},
+		name: {type:String, value:""},
+		status: {type:Number, value:0},
+		partiel : {type:Boolean, value:false},
+		pause : {type:Number, value:0},
+
+		version: {type:String, value:""},
+		line: {type:String, value:""},
+		col: {type:String, value:""},
+		type: {type:String, value:""},
+		versiond: {type:String, value:""},
+		
+		phase: {type:String, value:""},
+		error: {type:String, value:""},
+		nbl: {type:Number, value:0},
+		cl: {type:Number, value:0},
+		vc: {type:Number, value:0},
+		cd: {type:Number, value:0},
+		nbd: {type:Number, value:0},
+		vd: {type:Number, value:0},
+		
 	},
 	ready: function() {
 		AC.dumpview = this;
 	},
+	encours : function(status){
+		return status > 0 && status < 9;
+	},
+	phase : function(status){
+		
+	}
+	backClass : function(status){
+		return !this.encours(status) ? "blue ripple" : "blue ripple disabled";
+	},
+	filtreClass : function(status){
+		return !status ? "filtre" : "filtre disabled";
+	},
+	display : function(ptd){
+		this.reset();
+		if (this.ptd != ptd){
+			this.ptd = ptd;
+			this.type = ["Production", "Test", "Développement"][ptd];
+			this.name = "";
+		}
+	},
 	versdesktop : function(e){
 		AC.desktop.backtodesktop(this.ptd);
+	},
+	reset : function(){
+		this.name = "";
+		this.status = 0;
+		this.pause = 0;
+		this.version = "";
+		this.line = "";
+		this.col = "";
+		this.type = "";
+		this.versiond = "";
+	},
+	resetcpt : function(){
+		this.nbl = 0; this.cl = 0; this.vc = 0; this.nbd = 0; this.cd = 0; this.vd = 0;
+		this.partiel = false;
+	},
+	dump : function(){
+		if (this.encours(this.status)) return;
+		this.partiel = !this.version && !this.line && !this.col && !this.type;
+		this.name = AC.desktop.newdumpdir(this.ptd, this.partiel);
+		if (!this.name){
+			this.name = "?";
+			this.error = "Création de directory de dump impossible !";
+			return;
+		}
+		this.status = 1;
+		this.srv = AC.desktop.newServer(this.ptd, this.onDone.bind(this), this.onError.bind(this));
+		this.working();
+	},
+	onError : function(err){
+		this.err = err;
+		this.pause = 2;
+	},
+	pause : function(){
+		this.pause = 1;
+		this.err = "Pause femandée : applicable à la fin de la requête en cours";
+	},
+	reprise : function(){
+		this.err = "";
+		this.pause = 0;
+		this.working();
 	}
+	abandon : function() {
+		this.err = "";
+		this.pause = 0;
+		this.reset();
+		this.resetcpt();
+		if (this.srv)
+			this.srv.close();
+	}
+	onDone : function(text) {
+		if (this.pause == 1) {
+			this.err = "Dump en pause";
+			this.pause = 2;
+		}
+	},
+	working : function(){
+		this.error = "";
+		switch (this.status){
+		case 1 : {
+			this.resetcpt();
+			this.phase = "Obtention de la liste des lignes";
+			break;
+		}
+		case 2 : {
+
+			break;
+		}
+		}
+	},
+	
+	
 });
 </script>

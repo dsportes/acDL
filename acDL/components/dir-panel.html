@@ -26,6 +26,10 @@
 	:host .item {cursor:pointer; background-color:white; color:black;}
 	:host .selitem {cursor:pointer; background-color: var(--paper-blue-grey-700); color:white;}
 	:host .item:hover, .selitem:hover { background-color: var(--paper-blue-grey-200); color:black; }
+
+	:host .err {margin-top:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
+	:host .info {margin-top:10px; @apply(--paper-font-code1); }
+
 </style>
 	<div class="panel">
 	<div class="titleBar"><div class="url">[[url]]</div>[[title(ptd)]]</div>
@@ -48,6 +52,8 @@
 			<paper-button on-tap="todump" class="blue ripple">Nouveau Dump</paper-button>
 			<paper-button on-tap="toload" class$="[[loadbtnclass(cd)]]">Load Dump</paper-button>
 			</div>
+			<div class="info">[[info]]</div>
+			<div class="err">[[err]]</div>
 		</div>
 	</div>
 	</div>
@@ -65,7 +71,9 @@
 		ptd : {type:Number, value:0},
 		currentdump : {type:String, value:"", observer:"ondumpchange"},
 		cd : {type:Object, value:null},
-		url : {type:String, value:""}
+		url : {type:String, value:""},
+		info : {type:String, value:""},
+		err : {type:String, value:""}
 	},
 	  	
 	changeUrl : function(){
@@ -98,6 +106,7 @@
 	
 	todump : function(){
 		AC.desktop.changeView("dump");
+		AC.dumpview(this.ptd);
 	},
 
 	toload : function(ptd){
@@ -108,15 +117,27 @@
 		this.cd = newvalue ? AC.desktop.currentdumpitem : null;
 	},
 
-	doon : function(){
-		
+	doon : function(){ this.onoff(true); },
+	dooff : function(){ this.onoff(false); },
+	onoff : function(isOn){
+		this.info = isOn ? "server ON demandé" : "serveur OFF demandé";
+		this.err = "";
+		this.srv = AC.desktop.newServer(this.ptd, this.onDone.bind(this), this.onError.bind(this));
+		this.srv.onOff(isOn);
 	},
-	
-	dooff : function(){
-		
+	onError : function(err) {
+		this.info = "";
+		this.err = err;
+		this.srv.close();
 	},
-	
+	onDone : function(text) {
+		this.err = "";
+		this.info = text;
+		this.srv.close();
+	},	
 	editurl : function() {
+		this.info = "";
+		this.err = "";
 		this.$.urlpanel.openPanel(this.ptd);
 	}
   });
