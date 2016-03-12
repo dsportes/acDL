@@ -154,6 +154,8 @@
 	},
 	
 	scan : function(dirpath){
+		this.currentdump = "";
+		this.currentdumpitem = null;
 		if (!dirpath)
 			dirpath = this.dirpath;
 		else
@@ -198,24 +200,26 @@
 	newdumpdir : function(ptd, partiel){
 		var n = ["P","T","D"][ptd] + new Date().dumpName() + "A";
 		try {
-			AC.fs.mkdirSync(dirpath + "/" + n);
+			AC.fs.mkdirSync(this.dirpath + "/" + n);
 			return n;
 		} catch(e) {
-		    if ( e.code != 'EEXIST' ) return null;
+		    return e.code != 'EEXIST' ? null : n;
 		}
 	},
 	
 	commitdir : function(name, partiel, cb){
-		var p1 = dirpath + "/" + name;
-		var p2 = p.substring(0, p1.length - 1) + (partiel ? "P" : "C");
-		fs.rename(p1, p2, function(err) {
+		var self = this;
+		var p1 = this.dirpath + name;
+		var p2 = p1.substring(0, p1.length - 1) + (partiel ? "P" : "C");
+		AC.fs.rename(p1, p2, function(err) {
 			if (cb) 
 				cb(err);
+			self.scan();
 		});
 	},
 	
-	newServer : function(ptd, done, err){
-		var p = this.dirpath + (this.currentdump ? "/" + this.currentdump : "");
+	newServer : function(ptd, dumpName, done, err){
+		var p = this.dirpath + (dumpName ? dumpName : this.currentdump);
 		return new AC.Server(this.url(ptd), this.pwd(ptd), p, done, err);
 	},
 	

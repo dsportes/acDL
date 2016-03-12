@@ -106,7 +106,7 @@
 	
 	todump : function(){
 		AC.desktop.changeView("dump");
-		AC.dumpview(this.ptd);
+		AC.dumpview.display(this.ptd);
 	},
 
 	toload : function(ptd){
@@ -122,7 +122,7 @@
 	onoff : function(isOn){
 		this.info = isOn ? "server ON demandé" : "serveur OFF demandé";
 		this.err = "";
-		this.srv = AC.desktop.newServer(this.ptd, this.onDone.bind(this), this.onError.bind(this));
+		this.srv = AC.desktop.newServer(this.ptd, null, this.onDone.bind(this), this.onError.bind(this));
 		this.srv.onOff(isOn);
 	},
 	onError : function(err) {
