@@ -1,5 +1,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="dump-view">
@@ -8,18 +10,17 @@
 
 <style>
     :host { width:100%; }
-    :host .title { @apply(--paper-font-title2); color:var(--paper-indigo-a700); 
-    	padding:10px 0 20px 10px; }
-    :host .filtre { margin:10px; padding:5px; border:1px solid var(--paper-indigo-a100);
+    :host .title { margin:10px 10px 5px 10px; color:var(--paper-indigo-a700); @apply(--paper-font-title2); }
+    :host .filtre { margin:5px 10px 10px 10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
     	border-radius:5px; -webkit-border-radius:5px;}
+    :host .label {margin:5px 0 0 0; @apply(--paper-font-body2);}
     input[is=iron-input] { @apply(--input-std1); width: 95%; vertical-align:top; margin: 0 0 10px 0;}
     input[is=iron-input]:focus { @apply(--input-std1-focus); margin: 0 0 10px 0; }
 
-    :host .suivi { margin:10px; padding:5px; border:1px solid var(--paper-indigo-a100);
-    	border-radius:5px; -webkit-border-radius:5px;}
-    :host .phase { font-weight:bold; font-style:italic; @apply(--paper-font-body3};}
-	:host .error {margin-top:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
-    :host .label {margin: 10px 0 0 0; @apply(--paper-font-body2);}
+    :host .suivi { margin:10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
+    	border-radius:5px; -webkit-border-radius:5px; @apply(--paper-font-body2);}
+    :host .phase { font-weight:bold; font-style:italic; @apply(--paper-font-body3);}
+	:host .error { margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
 </style>
 	<paper-button on-tap="versdesktop" raised class$="[[backClass(status)]]">Retour à la synthèse des dumps</paper-button>
@@ -56,11 +57,11 @@
 	<template is="dom-if" if="[[status]]" >
 		<div class="suivi">
 			<div class="phase">[[phase]]</div>
-			<div hidden$="p1(status)">Lignes dumpées : [[cl]] sur [[nbl]] - Volume compressé chargé : [[vc]]</div>
-			<div hidden$="p2(status)">Documents chargés : [[cd]] sur [[nbd]] - Volume des documents chargés : [[vd]]</div>
-			<div class="error">[[error]]</div>
+			<div hidden$="p1(status)">Lignes dumpées : [[cl]] sur [[nbl]] - Volume compressé des lignes : [[editv(vc)]]</div>
+			<div hidden$="p2(status)">Documents dumpés : [[cd]] sur [[nbd]] - Volume des documents : [[editv(vd)]]</div>
 		</div>
 	</template>	
+	<div class="error">[[error]]</div>
 	
 </template>
 </dom-module>
@@ -92,7 +93,6 @@ Polymer({
 		vc: {type:Number, value:0},
 		cd: {type:Number, value:0},
 		nbd: {type:Number, value:0},
-		vd: {type:Number, value:0},
 		
 		lines : {type:Array, value:[]},
 		docs : {type:Array, value:[]}
@@ -112,7 +112,7 @@ Polymer({
 	},
 	
 	filtreClass : function(status){
-		return !status ? "filtre" : "filtre disabled";
+		return !status || status == 9 ? "filtre" : "filtre disabled";
 	},
 	
 	display : function(ptd){
@@ -125,7 +125,17 @@ Polymer({
 	},
 	
 	versdesktop : function(e){
-		AC.desktop.backtodesktop(this.ptd);
+		AC.desktop.backtodesktop();
+	},
+	
+	editv : function(v){
+		var v1 = "" + v;
+		var l = v1.length;
+		if (v > 1000000)
+			return v1.substring(0, l - 6) + "," + v1.substring(l - 6, l - 5) + "Mo";
+		if (v > 1000)
+			return v1.substring(0, l - 3) + "," + v1.substring(l - 3, l - 2) + "Ko";
+		return v1 + "o";
 	},
 	
 	reset : function(){
@@ -296,16 +306,15 @@ Polymer({
 			if (this.srv)
 				this.srv.close();
 			this.phase = "Dump terminé avec succès";
-			setTimeout(function(){
-				AC.desktop.commitdir(self.name, self.partiel, (err) => {
-					var p1 = self.name;
-					if (err)
-						self.error = "Impossible de renommer le directory " + p1 +
-								" dans " + AC.desktop.dirpath + "\n" + err.message;
-					else
-						self.name = p1.substring(0, p1.length - 1) + (self.partiel ? "P" : "C");
-				});
-			}, 100);
+			AC.desktop.commitdir(self.name, self.partiel, 0, (err) => {
+				var p1 = self.name;
+				if (err) {
+					self.error = "Impossible de renommer le directory " + p1 +
+							" dans " + AC.desktop.dirpath + "\n" + err.message;
+				} else {
+					self.name = p1.substring(0, p1.length - 1) + (self.partiel ? "P" : "C");
+				}
+			});
 			return;
 		}
 		}

@@ -1,5 +1,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="load-view">
@@ -7,10 +9,63 @@
 <style include="fwk-styles"></style>
 
 <style>
-    :host { background-color:white;}
+    :host { width:100%; }
+    :host .title, :host .titlep { margin:10px 10px 5px 10px; color:var(--paper-indigo-a700); @apply(--paper-font-title2); }
+    :host .titlep { color:red; font-weight:bold; font-size:32px; }
+    :host .filtre { margin:5px 10px 10px 10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
+    	border-radius:5px; -webkit-border-radius:5px;}
+    :host .label {margin:5px 0 0 0; @apply(--paper-font-body2);}
+    input[is=iron-input] { @apply(--input-std1); width: 95%; vertical-align:top; margin: 0 0 10px 0;}
+    input[is=iron-input]:focus { @apply(--input-std1-focus); margin: 0 0 10px 0; }
+
+    :host .suivi { margin:10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
+    	border-radius:5px; -webkit-border-radius:5px; @apply(--paper-font-body2);}
+    :host .phase { font-weight:bold; font-style:italic; @apply(--paper-font-body3);}
+	:host .error { margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
+    
 </style>
-	<h2>Load</h2>
-	<paper-button on-tap="versdesktop" class="blue ripple">Retour à la synthèse des dumps</paper-button>
+	<paper-button on-tap="versdesktop" raised class$="[[backClass(status)]]">Retour à la synthèse des dumps</paper-button>
+	<div class$="[[titleClass(ptd)]]">Restauration DB [[type]] depuis [[name]]</div>
+
+	<div class$="[[filtreClass(status)]]">
+		<div class="label">Documents créés depuis (AAAAMMJJ) :</div>
+		<div class="input"><input is="iron-input" value="{{versiond::input}}"></div>
+	</div>
+	
+	<div>
+	<template is="dom-if" if="[[!encours(status)]]" >
+		<paper-button on-tap="load" raised class="orange ripple">Restaurer</paper-button>
+	</template>
+	<template is="dom-if" if="[[encours(status)]]" >
+		<template is="dom-if" if="[[!pause]]" >
+			<paper-button on-tap="setpause" raised class="blue ripple">Pause</paper-button>
+		</template>
+		<template is="dom-if" if="[[pause]]" >
+			<paper-button on-tap="reprise" raised class="blue ripple">Reprise</paper-button>
+			<paper-button on-tap="abandon" raised class="blue ripple">Abandon</paper-button>
+		</template>
+	</template>
+	</div>
+	
+	<template is="dom-if" if="[[status]]" >
+		<div class="suivi">
+			<div class="phase">[[phase]]</div>
+			<div hidden$="p1(status)">Lignes restaurées : [[cl]] sur [[nbl]] - Volume : [[editv(vc)]]
+				- [[cells]] cells; [[nodes]] nodes; [[mimes]] mimes;
+			</div>
+			<div hidden$="p2(status)">Documents restaurées : [[cd]] sur [[nbd]] - Volume des documents : [[editv(vd)]]</div>
+		</div>
+	</template>
+	<div class="error">[[error]]</div>
+	
+	<paper-dialog id="confirmer" entry-animation="fade-in-animation" exit-animation="fade-out-animation">
+		<p>Waouh ! Restaurer la base de données de PRODUCTION ! Vraiment ?</p>
+		<div class="buttons">
+			<paper-button dialog-confirm>Même pas peur</paper-button>
+			<paper-button dialog-dismiss autofocus>Non, ne pas restaurer</paper-button>
+		</div>
+  	</paper-dialog>
+	
 </template>
 </dom-module>
 
@@ -18,14 +73,302 @@
 
 Polymer({
 	is : "load-view",
+	
 	properties : {
-		ptd: {type:Number, value:-1}
+		ptd: {type:Number, value:-1},
+		ptdname: {type:String, value:""},
+		name: {type:String, value:""},
+		status: {type:Number, value:0},
+		partiel : {type:Boolean, value:false},
+		pause : {type:Number, value:0},
+		type: {type:String, value:""},
+
+		line: {type:String, value:""},
+		versiond: {type:String, value:""},
+		
+		phase: {type:String, value:""},
+		error: {type:String, value:""},
+		nbl: {type:Number, value:0},
+		cl: {type:Number, value:0},
+		vc: {type:Number, value:0},
+		cd: {type:Number, value:0},
+		vd: {type:Number, value:0},
+		nbd: {type:Number, value:0},
+
+		cells: {type:Number, value:0},
+		nodes: {type:Number, value:0},
+		mimes: {type:Number, value:0},
+
+		lines : {type:Array, value:[]},
+		docs : {type:Array, value:[]}
+
 	},
+	
+	listeners : {
+		"confirmer.iron-overlay-closed" : "alerterClosing",
+	},
+
 	ready: function() {
 		AC.loadview = this;
 	},
+	
+	encours : function(status){
+		return status > 0 && status < 9;
+	},
+	
+	titleClass : function(ptd){
+		return ptd ? "title" : "titlep";
+	},
+	
+	backClass : function(status){
+		return !status || status == 9 ? "blue ripple" : "blue ripple disabled";
+	},
+	
+	filtreClass : function(status){
+		return !status || status == 9 ? "filtre" : "filtre disabled";
+	},
+	
+	display : function(ptd){
+		this.reset();
+		if (this.ptd != ptd){
+			this.ptd = ptd;
+			this.type = ["Production", "Test", "Développement"][ptd];
+			this.name = AC.desktop.currentdump;
+		}
+		this.path = AC.desktop.dirpath + this.name;
+		this.zips = {};
+		var self = this;
+		AC.fs.readdir(this.path, function(err, files){
+			if (!err && files && files.length != 0) {
+				self.nbZipFiles = 0;
+				files.forEach(function(zip){
+					if (zip.endsWith(".zip")){
+						self.nbZipFiles++;
+						var i = zip.indexOf("_");
+						self.zips[zip.substring(0, i)] = zip;
+					}
+				});
+			};
+		});
+	},
+	
 	versdesktop : function(e){
-		AC.desktop.backtodesktop(this.ptd);
+		AC.desktop.backtodesktop();
+	},
+	
+	editv : function(v){
+		var v1 = "" + v;
+		var l = v1.length;
+		if (l > 6)
+			return v1.substring(0, l - 6) + "," + v1.substring(l - 6, l - 5) + "Mo";
+		if (l > 3)
+			return v1.substring(0, l - 3) + "," + v1.substring(l - 3, l - 2) + "Ko";
+		return v1 + "o";
+	},
+	
+	reset : function(){
+		this.name = "";
+		this.status = 0;
+		this.pause = 0;
+		this.versiond = "";
+	},
+	
+	resetcpt : function(){
+		this.nbl = 0; this.cl = 0; this.vc = 0; this.nbd = 0; this.cd = 0; this.vd = 0;
+		this.mimes = 0; this.nodes = 0; this.cells = 0;
+	},
+	
+	/* Confirmer **************************************/
+	showConfirm : function(){
+		var self = this;
+		return new Promise(function(resolve, reject){
+			self.$.confirmer.open();
+			self.resolveAlerter = resolve;
+			self.rejectAlerter = reject;
+		});
+	},
+
+	alerterClosing : function(e){
+		var x = e.detail;
+		if (x.confirmed)
+			this.resolveAlerter(true);
+		else
+			this.rejectAlerter(false);
+	},
+
+	load : function(){
+		if (!this.ptd)
+			this.showConfirm().then(this.load2);
+		else
+			this.load2();
+	},
+
+	load2 : function(b){
+		if (this.encours(this.status)) return;
+		this.status = 1;
+		this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
+		var f = {}
+		if (this.versiond) f.versiond = this.versiond;
+		this.working();
+	},
+
+	setpause : function(){
+		this.pause = 1;
+		this.error = "Pause demandée (applicable à la fin de la requête en cours)";
+	},
+	
+	reprise : function(){
+		this.error = "";
+		this.pause = 0;
+		this.working();
+	},
+	
+	abandon : function() {
+		this.error = "";
+		this.pause = 0;
+		this.reset();
+		this.resetcpt();
+		if (this.srv)
+			this.srv.close();
+	},
+	
+	enPause : function(){
+		if (this.pause == 1) {
+			this.error = "Restauration en pause";
+			this.pause = 2;
+		}	
+	},
+
+	onError : function(err){
+		this.error = err;
+		this.pause = 2;
+	},
+
+	onDone : function(text) {
+		var self = this;
+		switch (this.status){
+		case 2 : {
+			try {
+				var stats = JSON.parse(text);
+			} catch(e){
+				this.onError("Retour de restauration d'une ligne : syntaxe incorrecte");
+				return;
+			}
+			this.vc += stats.bytes ? stats.bytes : 0;
+			this.cells += stats.cells ? stats.cells : 0;
+			this.mimes += stats.mimes ? stats.mimes : 0;
+			this.nodes += stats.nodes ? stats.nodes : 0;
+			this.cl++;
+			if (this.nbl == this.cl)
+				this.status = 3;
+			this.enPause();
+			this.working();
+			return;
+		}
+		case 4 : {
+			this.vd += this.docSize;
+			this.cd++;
+			if (this.nbd == this.cd)
+				this.status = 9;
+			this.enPause();
+			this.working();
+			return;
+		}
+		}
+	},
+	
+	working : function(){
+		var self = this;
+		if (this.pause)
+			return;
+		this.error = "";
+		switch (this.status){
+		case 1 : {
+			AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
+				if (err)
+					self.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+				else {
+					try {
+						self.lines = JSON.parse(data);
+					} catch (e) {
+						self.onError("Erreur de syntaxe dans " + self.path + "/lignes.json impossible. " + err.message);
+						return;
+					}
+					self.nbl = self.lines.length;
+					if (self.nbl != self.nbZipFiles)
+						self.onError("" + self.nbl + " lignes : " + self.nbZipFiles + " trouvés");
+					else {
+						self.status = 2;
+						self.enPause();
+						self.working();
+					}
+				}
+			});
+			return;
+		}
+		case 2 : {
+			this.phase = "Restauration des lignes de cellules";
+			var line = this.lines[this.cl];
+			var fn = this.zips[line];
+			if (!fn)
+				this.onError("Fichier .zip pour la ligne " + line + " introuvable");
+			else
+				this.srv.load(line, this.path + "/" + fn);
+			return;
+		}
+		case 3 : {
+			AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+				if (err)
+					self.onError("Lecture de " + this.path + "/docs.json impossible. " + err.message);
+				else {
+					try {
+						self.docs = JSON.parse(data);
+					} catch (e) {
+						self.onError("Erreur de syntaxe dans " + self.path 
+								+ "/docs.json impossible. " + err.message);	
+						return;
+					}
+					self.nbd = self.docs.length;
+					self.status = 4;
+					self.enPause();
+					self.working();
+				}
+			});
+			return;
+		}
+		case 4 : {
+			this.phase = "Restauration des documents";
+			var doc = this.docs[this.cd];
+			var i = doc.lastIndexOf("-");
+			i = doc.lastIndexOf("-", i - 1);
+			i = doc.lastIndexOf("-", i - 1);
+			var d = doc.substring(i + 1, i + 5);
+			var fn = this.path + "/" + d + "/" + doc;
+			var stats = null;
+			try {
+				stats = AC.fs.statSync(fn);
+			} catch (e) {
+				fn += ".gz";
+				doc += ".gz";
+				try {
+					stats = AC.fs.statSync(fn);
+				} catch(e){
+					self.onError("Fichier " + fn + " (ou .gz) non trouvé");
+					return;
+				}
+			}
+			this.docSize = stats.size;
+			this.srv.loadD(doc, fn);
+			return;
+		}
+		case 9 : {
+			if (this.srv)
+				this.srv.close();
+			this.phase = "Restauration terminée avec succès";
+			return;
+		}
+		}
 	}
+	
 });
 </script>

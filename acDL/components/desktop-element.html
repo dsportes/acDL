@@ -27,7 +27,7 @@
 		padding:2px; overflow-y:auto;}
 	:host dir-panel { flex-grow:2; }
 	
-	:host .title { text-align:right; @apply(--paper-font-title2); 
+	:host .title { text-align:right; @apply(--paper-font-title2); color:var(--paper-indigo-a700);
 		float:right; max-width:50%; line-height:20px;}
 	
 	:host .dump { background-color: var(--paper-blue-grey-50); color:black;
@@ -113,7 +113,7 @@
 		currentptd : {type:Number, value:-1}
 	},
   	
-	backtodesktop : function(ptd){
+	backtodesktop : function(){
 		this.viewname = "desktop";
 	},
 
@@ -145,7 +145,7 @@
 	sortDirs : function(dirs) {
 		if (!dirs || dirs.length < 2) return dirs;
 		dirs.sort(function(a,b){
-			return a.dh < b.dh ? -1 : (a.dh > b.dh ? 1 : 0);
+			return a.dh < b.dh ? 1 : (a.dh > b.dh ? -1 : 0);
 		});
 		for(var i = 0; i < dirs.length; i++) {
 			var d = dirs[i];
@@ -166,7 +166,7 @@
 		}
 		this.alldirs = [[],[],[]];
 		var self = this;
-		this.fs.readdir(dirpath, function(err, files){
+		AC.fs.readdir(dirpath, function(err, files){
 			if (!err && files && files.length != 0) {
 				files.forEach(function(dir){
 					var d = self.setDir(dir);
@@ -207,17 +207,29 @@
 		}
 	},
 	
-	commitdir : function(name, partiel, cb){
+	commitdir : function(name, partiel, n, cb){
 		var self = this;
 		var p1 = this.dirpath + name;
 		var p2 = p1.substring(0, p1.length - 1) + (partiel ? "P" : "C");
 		AC.fs.rename(p1, p2, function(err) {
-			if (cb) 
-				cb(err);
-			self.scan();
+			if (!err) {
+				if (cb) 
+					cb();
+				self.scan();
+			} else {
+				if (n == 4) {
+					console.log("rename error : " + n + " - " + err.message);
+					if (cb) 
+						cb(err);
+				} else {
+					setTimeout(function(){
+						self.commitdir(name, partiel, n++, cb);
+					}, 200);
+				}
+			}
 		});
 	},
-	
+		
 	newServer : function(ptd, dumpName, done, err){
 		var p = this.dirpath + (dumpName ? dumpName : this.currentdump);
 		return new AC.Server(this.url(ptd), this.pwd(ptd), p, done, err);
@@ -239,7 +251,7 @@
 	
 	savePrefs : function(){
 		var data = JSON.stringify(this.prefs);
-		this.fs.writeFile(this.prefsfile, data, function(err) {
+		AC.fs.writeFile(this.prefsfile, data, function(err) {
 		    if(err) {
 		        alert("La sauvegarde des préférences (.acdumpRst) dans le home a échoué") ;
 		    }
@@ -263,14 +275,13 @@
     ready: function() {
 		AC.desktop = this;
 		var self = this;
-		this.fs = require("fs");
 		console.log(global.__dirname);
 		this.$.fileElem.addEventListener("change", function(){
 			self.scan(this.files[0].path);
 		});
 		this.homedir = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME" ];
 		this.prefsfile = this.homedir + "/.acSvgRst.json";
-		this.fs.readFile(this.prefsfile, 'utf-8', function(err, data) {
+		AC.fs.readFile(this.prefsfile, 'utf-8', function(err, data) {
 			var txt = err ? "{}" : data;
 			self.loadPrefs(data);
 		});
