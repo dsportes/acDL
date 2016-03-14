@@ -231,7 +231,8 @@
 	},
 		
 	newServer : function(ptd, dumpName, done, err){
-		var p = this.dirpath + (dumpName ? dumpName : this.currentdump);
+		var dp = this.dirpath.endsWith("/") ? this.dirpath : this.dirpath + "/";
+		var p = dp + (dumpName ? dumpName : this.currentdump);
 		return new AC.Server(this.url(ptd), this.pwd(ptd), p, done, err);
 	},
 	
