@@ -207,25 +207,20 @@
 		}
 	},
 	
-	commitdir : function(name, partiel, n, cb){
+	commitdir : function(name, partiel, cb){
 		var self = this;
-		var p1 = this.dirpath + name;
+		var dp = this.dirpath.endsWith("/") ? this.dirpath : this.dirpath + "/";
+		var p1 = dp + name;
 		var p2 = p1.substring(0, p1.length - 1) + (partiel ? "P" : "C");
 		AC.fs.rename(p1, p2, function(err) {
-			if (!err) {
+			if (err) {
+				console.log("rename error : " + err.message);
+				if (cb) 
+					cb(err);
+			} else {
 				if (cb) 
 					cb();
 				self.scan();
-			} else {
-				if (n == 4) {
-					console.log("rename error : " + n + " - " + err.message);
-					if (cb) 
-						cb(err);
-				} else {
-					setTimeout(function(){
-						self.commitdir(name, partiel, n++, cb);
-					}, 200);
-				}
 			}
 		});
 	},
@@ -306,26 +301,6 @@
 //           	}
 //           }
 //         });
-
-// 		var srv;
-// 		try {
-// 			srv = new Server("http://192.168.0.1:8080", "lesroses", "d:/acDL/T1/");
-// //			srv = new Server("https://alterconsos.appspot.com", "lesroses", "d:/acDL/T2/");
-// 		} catch (e) {
-// 			console.log(e.message);
-// 			srv = null;
-// 		}
-
-// 		if (srv) {
-// 			var line = "C.2.";
-// 			srv.onDone = function(error){
-// 		      		if (!error) 
-// 		      			console.log("Saved : " + line);
-// 		      		else
-// 		      			console.log(error);
-// 	      		};
-// 	      	srv.dump(line);
-// 		}
     	
   });
 </script>

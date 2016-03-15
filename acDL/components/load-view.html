@@ -100,7 +100,10 @@ Polymer({
 		mimes: {type:Number, value:0},
 
 		lines : {type:Array, value:[]},
-		docs : {type:Array, value:[]}
+		docs : {type:Array, value:[]},
+		
+		filtreSrc : {type:Object, value:{}},
+		urlDest : {type:String, value:""}
 
 	},
 	
@@ -134,6 +137,7 @@ Polymer({
 			this.ptd = ptd;
 			this.type = ["Production", "Test", "Développement"][ptd];
 		}
+		this.urlDest = AC.desktop.url(this.ptd);
 		this.name = AC.desktop.currentdump;
 		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
 		this.path = dp + this.name;
@@ -205,12 +209,24 @@ Polymer({
 	},
 
 	load2 : function(b){
-		if (this.encours(this.status)) return;
-		this.status = 1;
-		this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
-		var f = {}
-		if (this.versiond) f.versiond = this.versiond;
-		this.working();
+		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
+			if (err)
+				this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+			else {
+				try {
+					this.filtreSrc = JSON.parse(data);
+				} catch (e) {
+					self.onError("Erreur de syntaxe dans " + self.path + "/filtre.json impossible. " + err.message);
+					return;
+				}
+				if (this.encours(this.status)) return;
+				this.status = 1;
+				this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
+				var f = {}
+				if (this.versiond) f.versiond = this.versiond;
+				this.working();
+			};
+		}.bind(this));
 	},
 
 	setpause : function(){
@@ -359,7 +375,7 @@ Polymer({
 				}
 			}
 			this.docSize = stats.size;
-			this.srv.loadD(doc, fn);
+			this.srv.loadD(doc, fn, this.filtreSrc.url, this.urlDest);
 			return;
 		}
 		case 9 : {

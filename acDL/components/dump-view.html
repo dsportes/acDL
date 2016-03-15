@@ -170,6 +170,7 @@ Polymer({
 		if (this.types) f.types = this.types;
 		if (this.version) f.version = this.version;
 		if (this.versiond) f.versiond = this.versiond;
+		f.url = AC.desktop.url(this.ptd);
 		var x = JSON.stringify(f);
 		var self = this;
 		AC.fs.writeFile(this.srv.dirName + "filtre.json", x, (err) => {
@@ -256,7 +257,7 @@ Polymer({
 					self.onError("Impossible d'écrire docs.json dans " + this.srv.dirName + "\n" + err.message);
 					return;
 				}
-				self.status = this.nbd ? 4 : 9;
+				self.status = this.nbd ? 4 : 5;
 				self.enPause();
 				self.working();
 				return;
@@ -267,7 +268,7 @@ Polymer({
 			this.vd += text;
 			this.cd++;
 			if (this.nbd == this.cd)
-				this.status = 9;
+				this.status = 5;
 			this.enPause();
 			this.working();
 			return;
@@ -301,21 +302,29 @@ Polymer({
 			this.srv.dumpD(this.docs[this.cd]);
 			return;
 		}
-		case 9 : {
+		case 5 : {
 			var self = this;
-			if (this.srv)
+			if (this.srv) {
 				this.srv.close();
-			this.phase = "Dump terminé avec succès";
-			AC.desktop.commitdir(self.name, self.partiel, 0, (err) => {
+				this.srv = null;
+			}
+			this.phase = "Dump terminé avec succès, renommage du directory";
+			AC.desktop.commitdir(self.name, self.partiel, (err) => {
 				var p1 = self.name;
 				if (err) {
-					self.error = "Impossible de renommer le directory " + p1 +
-							" dans " + AC.desktop.dirpath + "\n" + err.message;
+					self.onError("Impossible de renommer le directory " + p1 +
+							" dans " + AC.desktop.dirpath + "\nExplorer ouvert dessus ?\n" 
+							+ err.message);
 				} else {
 					self.name = p1.substring(0, p1.length - 1) + (self.partiel ? "P" : "C");
+					self.status = 9;
+					self.working();
 				}
 			});
 			return;
+		}
+		case 9 : {
+			this.phase = "Dump terminé avec succès, directory renommé !";
 		}
 		}
 	}
