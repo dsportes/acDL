@@ -1,16 +1,55 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="detail-view">
 <template>
 <style include="fwk-styles"></style>
+<style is="custom-style" include="iron-flex iron-flex-alignment"></style>
 
 <style>
-    :host { background-color:white;}
+    :host { @apply(--layout-vertical); height:100%; width:100%; }
+    :host .title { margin:10px 10px 5px 10px; color:var(--paper-indigo-a700); @apply(--paper-font-title2); }
+    :host .itemgroup { margin:5px 10px; padding:0 5px; min-height:35px;
+    	border:1px solid var(--paper-indigo-a100); @apply(--paper-font-label2);
+    	border-radius:5px; -webkit-border-radius:5px;}
+    :host .item {margin-right:10px;}
+  	:host .btndd {float:right; margin:0 5px;}
+    
+    :host .panels { @apply(--layout-flex); }
+    :host .ddpanel {padding:5px; overflow-y:auto; }
+	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
+	
 </style>
-	<h2>Détail</h2>
-	<paper-button on-tap="versdesktop" class="blue ripple">Retour à la synthèse des dumps</paper-button>
+	<div>
+	<paper-button on-tap="versdesktop" raised class="title">Retour à la synthèse des dumps</paper-button>
+	<div class="title">Détail du dump [[type]] : [[dumpitem.dh]]</div>
+	<div class="itemgroup">
+		<paper-button on-tap="voirdonnees" class="btndd blue ripple" raised$="[[donnees]]">Données</paper-button>
+		<paper-button on-tap="voirdocuments" class="btndd blue ripple" raised$="[[!donnees]]">Documents</paper-button>
+		<div>
+			<span class="item" hidden$="[[!filtre.url]]"><b>Url:</b>[[filtre.url]];</span>
+			<span class="item" hidden$="[[!filtre.line]]"><b>Lignes:</b>[[filtre.line]];</span>
+			<span class="item" hidden$="[[!filtre.col]]"><b>Colonnes:</b>[[filtre.col]];</span>
+			<span class="item" hidden$="[[!filtre.types]]"><b>Types:</b>[[filtre.types]];</span>
+			<span class="item" hidden$="[[!filtre.versionl]]"><b>Version:</b>[[filtre.version]];</span>
+			<span class="item" hidden$="[[!filtre.versiond]]"><b>Version&nbsp;des&nbsp;documents:</b>[[filtre.versiond]];</span>
+		</div>
+		<div>[[lines.length]] lignes - [[docs.length]] documents</div>
+	</div>
+	<div class="error">[[error]]</div>
+	</div>
+	
+	<neon-animated-pages class="panels" attr-for-selected="id" selected="[[viewname(donnees)]]" 
+		entry-animation="slide-from-left-animation" exit-animation="slide-left-animation">
+		<neon-animatable id="donnees">
+			<div class="ddpanel">Données</div>
+		</neon-animatable>
+		<neon-animatable id="documents">
+			<div class="ddpanel">Documents</div>
+		</neon-animatable>
+	</neon-animated-pages>
 </template>
 </dom-module>
 
@@ -19,13 +58,118 @@
 Polymer({
 	is : "detail-view",
 	properties : {
-		ptd: {type:Number, value:-1}
+		ptd: {type:Number, value:-1},
+		ptdname: {type:String, value:""},
+		dumpitem: {type:String, value:""},
+		status: {type:Number, value:0},
+		filtre : {type:Object, value:{}},
+		path : {type:String, value:""},
+		
+		zips : {type:Object, value:{}},
+		docs : {type:Array, value:[]},
+		lines: {type:Array, value:[]},
+		nbZipFiles : {type:Number, value:0},
+		nbl : {type:Number, value:0},
+		error : {type:String, value:""},
+		
+		donnees : {type:Boolean, value:true},
+		
 	},
 	ready: function() {
 		AC.detailview = this;
 	},
+	viewname : function(donnees){
+		return donnees ? "donnees" : "documents";
+	},
+	voirdonnees : function() { 
+		this.donnees = true;
+	},
+	voirdocuments : function() { 
+		this.donnees = false;
+	},
+	display : function(ptd){
+		this.dumpitem = AC.desktop.currentdumpitem;
+		this.ptd = this.dumpitem.ptd;
+		this.type = ["Production", "Test", "Développement"][this.ptd];
+		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
+		this.path = dp + this.dumpitem.name;
+		this.zips = {};
+		this.docs = [];
+		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
+			if (err)
+				this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+			else {
+				try {
+					this.filtre = JSON.parse(data);
+				} catch (e) {
+					this.onError("Erreur de syntaxe dans " + self.path + "/filtre.json impossible. " + err.message);
+					return;
+				}
+				AC.fs.readdir(this.path, function(err, files){
+					if (!err && files && files.length != 0) {
+						this.nbZipFiles = 0;
+						files.forEach(function(zip){
+							if (zip.endsWith(".zip")){
+								this.nbZipFiles++;
+								var i = zip.indexOf("_");
+								this.zips[zip.substring(0, i)] = zip;
+							}
+						}.bind(this));
+					};
+					AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+						if (err)
+							this.onError("Lecture de " + this.path + "/docs.json impossible. " + err.message);
+						else {
+							try {
+								this.docs = JSON.parse(data);
+							} catch (e) {
+								this.onError("Erreur de syntaxe dans " + this.path 
+										+ "/docs.json impossible. " + err.message);	
+							}
+						}
+						AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
+							if (err)
+								this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+							else {
+								try {
+									this.lines = JSON.parse(data);
+								} catch (e) {
+									this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json impossible. " + err.message);
+									return;
+								}
+								this.nbl = this.lines.length;
+								if (this.nbl != this.nbZipFiles)
+									this.onError("" + this.nbl + " lignes : " + this.nbZipFiles + " trouvés");
+								else {
+									this.initView();
+								}
+							}
+						}.bind(this));
+					}.bind(this));
+				}.bind(this));
+			};
+		}.bind(this));
+	},
 	versdesktop : function(e){
-		AC.desktop.backtodesktop(this.ptd);
+		AC.desktop.backtodesktop();
+	},
+	initView : function(){
+		this.documents = [];
+		for(var i = 0, d = null; d = this.docs[i]; i++){
+			var j = d.lastIndex("-");
+			j =  d.lastIndex("-", j - 1);
+			var k = d.lastIndex("-", j - 1);
+			var mois = d.substring(k, k + 4);
+			var jour = d.substring(k + 4, j);
+			var j = d.lastIndexOf("_", k - 1);
+			var orig = d.substring(0, j);
+			this.documents.push({d:d, mois:mois, jour:jour, orig:orig});
+		}
+		this.donnees = true;
+	},
+	onError : function(err){
+		this.error = err;
 	}
+	
 });
 </script>

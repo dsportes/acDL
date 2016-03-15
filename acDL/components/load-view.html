@@ -100,8 +100,10 @@ Polymer({
 		mimes: {type:Number, value:0},
 
 		lines : {type:Array, value:[]},
+		zips : {type:Object, value:{}},
 		docs : {type:Array, value:[]},
-		
+		nbZipFiles : {type:Number, value:0},
+
 		filtreSrc : {type:Object, value:{}},
 		urlDest : {type:String, value:""}
 
@@ -211,12 +213,12 @@ Polymer({
 	load2 : function(b){
 		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
 			if (err)
-				this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+				this.onError("Lecture de " + this.path + "/filtre.json impossible. " + err.message);
 			else {
 				try {
 					this.filtreSrc = JSON.parse(data);
 				} catch (e) {
-					self.onError("Erreur de syntaxe dans " + self.path + "/filtre.json impossible. " + err.message);
+					this.onError("Erreur de syntaxe dans " + this.path + "/filtre.json impossible. " + err.message);
 					return;
 				}
 				if (this.encours(this.status)) return;
