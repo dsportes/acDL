@@ -16,11 +16,34 @@
     	border-radius:5px; -webkit-border-radius:5px;}
     :host .item {margin-right:10px;}
   	:host .btndd {float:right; margin:0 5px;}
+	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
     :host .panels { @apply(--layout-flex); }
-    :host .ddpanel {padding:5px; overflow-y:auto; }
-	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
-	
+    :host #documents {@apply(--layout-horizontal); height:100%; width:100%;}
+    :host .ddpanel1 { @apply(--layout-vertical); height:100%; width:40%;}
+    :host #ifr { @apply(--layout-flex); margin:5px; overflow-y:auto;
+    	border:1px solid var(--paper-indigo-a200);}
+    :host .source {margin:5px;}
+    :host .mois {height:40%; margin:5px; overflow-y:auto; }
+    :host .docs {@apply(--layout-flex); margin:5px; overflow-y:auto; }
+
+    :host .label {margin: 0 10px; @apply(--paper-font-body2); display:inline-block;}
+    :host .input {display:inline-block;}
+    input[is=iron-input] { @apply(--input-std1); width:100px; margin-bottom:5px;}
+    input[is=iron-input]:focus { @apply(--input-std1-focus); margin-bottom:4px; }
+    
+    :host .jour {padding:3px; margin:0 -3px; cursor:pointer;}
+    :host .seljour, :host .jour:hover, :host .seldoc, :host .doc:hover 
+    	{color:white; background-color:var(--paper-indigo-a700);}
+
+    :host .doc {cursor:pointer;}
+    
+    :host .imois {margin:5px 0;}
+    :host .libmois {float:left; margin:3px 10px 0 0; @apply(--paper-font-body2);
+    	color:var(--paper-indigo-a700); line-height:14px;}
+    :host .ljours { margin-left:20px; @apply(--paper-font-code1);}
+    :host .docs {@apply(--paper-font-code1);}
+    	
 </style>
 	<div>
 	<paper-button on-tap="versdesktop" raised class="title">Retour à la synthèse des dumps</paper-button>
@@ -44,10 +67,34 @@
 	<neon-animated-pages class="panels" attr-for-selected="id" selected="[[viewname(donnees)]]" 
 		entry-animation="slide-from-left-animation" exit-animation="slide-left-animation">
 		<neon-animatable id="donnees">
-			<div class="ddpanel">Données</div>
+			<div class="ddpanel1">Données</div>
 		</neon-animatable>
 		<neon-animatable id="documents">
-			<div class="ddpanel">Documents</div>
+			<div class="ddpanel1">
+				<div class="source">
+					<div class="label">Source :</div>
+					<div class="input"><input is="iron-input" 
+						value="{{source::input}}" placeholder="C.2."></div>
+				</div>
+				<div class="mois">
+					<template is="dom-repeat" items="[[lmois]]" as="mois">
+						<div class="imois">
+							<div class="libmois">[[mois.lib]]</div>
+							<div class="ljours">
+							<template is="dom-repeat" items="[[mois.ljours]]" as="jour">
+								<span class$="[[jourClass(jour,selectedJour)]]" on-tap="selectJour">[[jour.jour]]</span>
+							</template>
+							</div>
+						</div>
+					</template>
+				</div>
+				<div class="docs">
+					<template is="dom-repeat" items="[[ldocs]]" as="doc">
+						<div class$="[[docClass(doc.d,selectedDoc.d)]]" on-tap="selectDoc">[[doc.d]]</div>
+					</template>
+				</div>
+			</div>
+			<iframe id="ifr"></iframe>
 		</neon-animatable>
 	</neon-animated-pages>
 </template>
@@ -62,17 +109,24 @@ Polymer({
 		ptdname: {type:String, value:""},
 		dumpitem: {type:String, value:""},
 		status: {type:Number, value:0},
-		filtre : {type:Object, value:{}},
-		path : {type:String, value:""},
+		filtre: {type:Object, value:{}},
+		path: {type:String, value:""},
 		
-		zips : {type:Object, value:{}},
-		docs : {type:Array, value:[]},
+		zips: {type:Object, value:{}},
+		docs: {type:Array, value:[]},
 		lines: {type:Array, value:[]},
-		nbZipFiles : {type:Number, value:0},
-		nbl : {type:Number, value:0},
-		error : {type:String, value:""},
+		nbZipFiles: {type:Number, value:0},
+		nbl: {type:Number, value:0},
+		error: {type:String, value:""},
 		
-		donnees : {type:Boolean, value:true},
+		source: {type:String, value:"", observer:"changeSource"},
+		selectedMois: {type:String, value:""},
+		selectedJour: {type:String, value:""},
+		selectedDoc: {type:String, value:""},
+		documents: {type:Array, value:[]},
+		lmois: {type:Array, value:[]},
+		ldocs: {type:Array, value:[]},
+		donnees: {type:Boolean, value:true},
 		
 	},
 	ready: function() {
@@ -86,6 +140,13 @@ Polymer({
 	},
 	voirdocuments : function() { 
 		this.donnees = false;
+		this.changeSource();
+	},
+	jourClass : function(jour, selectedJour){
+		return jour.val == selectedJour ? "jour seljour" : "jour";
+	},
+	docClass : function(docd, selectedDocd){
+		return docd == selectedDocd ? "doc seldoc" : "doc";
 	},
 	display : function(ptd){
 		this.dumpitem = AC.desktop.currentdumpitem;
@@ -156,16 +217,123 @@ Polymer({
 	initView : function(){
 		this.documents = [];
 		for(var i = 0, d = null; d = this.docs[i]; i++){
-			var j = d.lastIndex("-");
-			j =  d.lastIndex("-", j - 1);
-			var k = d.lastIndex("-", j - 1);
-			var mois = d.substring(k, k + 4);
-			var jour = d.substring(k + 4, j);
+			var j = d.lastIndexOf("-");
+			j =  d.lastIndexOf("-", j - 1);
+			var k = d.lastIndexOf("-", j - 1);
+			var mois = d.substring(k + 1, k + 5);
+			var jour = d.substring(k + 5, k + 7);
 			var j = d.lastIndexOf("_", k - 1);
-			var orig = d.substring(0, j);
-			this.documents.push({d:d, mois:mois, jour:jour, orig:orig});
+			var orig = d.substring(0, j + 1);
+			orig = orig.replace(/_/g, ".");
+			this.documents.push({d:d, mois:mois, jour:jour, orig:orig, 
+				libmois:"20" + mois.substring(0,2) + "-" + mois.substring(2)});
 		}
 		this.donnees = true;
+	},
+	changeSource : function(newValue, oldValue){
+		if (!this.documents) return;
+		var amois = {};
+		var lmois = [];
+		for(var i = 0, d = null; d = this.documents[i]; i++){
+			if (!d.orig.startsWith(this.source))
+				continue;
+			var m = amois[d.mois];
+			if (!m){
+				var m = {mois:d.mois, lib:d.libmois, ljours:[], ajours:{} };
+				amois[d.mois] = m;
+				lmois.push(m);
+			}
+			var j = m.ajours[d.jour];
+			if (!j){
+				var j = {jour:d.jour, val:d.mois + d.jour, docs:[] };
+				m.ajours[d.jour] = j;
+				m.ljours.push(j);				
+			}
+			j.docs.push(d);
+		}
+		if (lmois.length > 0) {
+			lmois.sort(function(a,b){
+				return a.mois < b.mois ? 1 : (a.mois > b.mois ? -1 : 0);
+			});
+			for(var i = 0, m = null; m = lmois[i]; i++) {
+				m.ljours.sort(function(a,b){
+					return a.jour < b.jour ? -1 : (a.jour > b.jour ? 1 : 0);
+				});
+				for(var k = 0, j = null; j = m[k]; k++) {
+					if (j.docs.length > 2)
+						j.docs.sort();
+				}
+			}
+			this.lmois = lmois;
+			this.selectedMois = lmois[0].mois;
+			this.selectedJour = lmois[0].ljours[0].val;
+			this.ldocs = lmois[0].ljours[0].docs;
+			this.selectedDoc = this.ldocs[0];
+		} else {
+			this.selectedMois = "";
+			this.selectedJour = "";
+			this.selectedDoc = "";
+			this.lmois = [];
+		}
+		this.displayDoc();
+	},
+	selectJour : function(e){
+		this.selectedJour = e.model.__data__.jour.val;
+		this.selectedMois = this.selectedJour.substring(0,4);
+		var jj = this.selectedJour.substring(4);
+		var m = null;
+		var j = null;
+		this.ldocs = [];
+		for(var i = 0, x = null; x = this.lmois[i]; i++)
+			if (x.mois == this.selectedMois){
+				m = x;
+				for(var k = 0, y = null; y = m.ljours[k]; k++){
+					if (y.jour == jj) {
+						j = y;
+						break;
+					}
+				}
+				break;
+			}
+		this.ldocs = j ? j.docs : [];
+		this.selectedDoc = j ? this.ldocs[0] : null;
+		this.displayDoc();
+	},
+	selectDoc : function(e){
+		this.selectedDoc = e.model.__data__.doc;
+		this.displayDoc();
+	},
+	displayDoc : function(){
+		var x = this.selectedDoc;
+		if (!x) {
+			this.$.ifr.document = null;
+			return;
+		}
+		var fn = this.path + "/" + x.mois + "/" + x.d;
+		AC.fs.readFile(fn, function(err, data) {
+			if (err) {
+				if (err.code == "ENOENT") {
+					fn += ".gz";
+					AC.fs.readFile(fn, function(err, data) {
+						if (err) {
+							this.onError("Lecture de " + fn + err.message);
+						} else
+							this.displayDoc2(data, true);
+					}.bind(this));
+				} else
+					this.onError("Lecture de " + fn + err.message);
+			} else
+				this.displayDoc2(data, false);
+		}.bind(this));
+	},
+	displayDoc2 : function(data, gz){
+		if (gz)
+			data = pako.inflate(data);
+		var html = AC.decoder.decode(data);
+		var doc = this.$.ifr.contentWindow.document;
+		doc.open();
+		doc.write(html);
+		doc.close();
 	},
 	onError : function(err){
 		this.error = err;

@@ -2,7 +2,7 @@
   "name": "acDL",
   "main": "index.html",
   "description": "Dump / Load de la base alterconsos",
-  "version": "0.1",
+  "version": "1.0",
   "window": {
     "title": "Dump/Load alterconsos",
     "icon": "icon.png",
