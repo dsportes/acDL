@@ -1,6 +1,7 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="lines-view.html">
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="detail-view">
@@ -19,6 +20,7 @@
 	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
     :host .panels { @apply(--layout-flex); }
+    :host lines-view {height:100%; width:100%;}
     :host #documents {@apply(--layout-horizontal); height:100%; width:100%;}
     :host .ddpanel1 { @apply(--layout-vertical); height:100%; width:40%;}
     :host #ifr { @apply(--layout-flex); margin:5px; overflow-y:auto;
@@ -67,7 +69,7 @@
 	<neon-animated-pages class="panels" attr-for-selected="id" selected="[[viewname(donnees)]]" 
 		entry-animation="slide-from-left-animation" exit-animation="slide-left-animation">
 		<neon-animatable id="donnees">
-			<div class="ddpanel1">Données</div>
+			<lines-view error="{{error}}"></lines-view>
 		</neon-animatable>
 		<neon-animatable id="documents">
 			<div class="ddpanel1">
@@ -137,6 +139,7 @@ Polymer({
 	},
 	voirdonnees : function() { 
 		this.donnees = true;
+		AC.linesview.display(this.path, this.zips, this.lines);
 	},
 	voirdocuments : function() { 
 		this.donnees = false;
@@ -228,7 +231,7 @@ Polymer({
 			this.documents.push({d:d, mois:mois, jour:jour, orig:orig, 
 				libmois:"20" + mois.substring(0,2) + "-" + mois.substring(2)});
 		}
-		this.donnees = true;
+		this.voirdonnees();
 	},
 	changeSource : function(newValue, oldValue){
 		if (!this.documents) return;

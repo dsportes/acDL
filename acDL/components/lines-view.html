@@ -1,0 +1,241 @@
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="lines-view">
+<template>
+<style include="fwk-styles"></style>
+<style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+
+<style>
+    :host { @apply(--layout-vertical); height:100%; width:100%; }
+    :host .title { margin:10px 10px 5px 10px; color:var(--paper-indigo-a700); @apply(--paper-font-title2); }
+    :host .itemgroup { margin:5px 10px; padding:0 5px; min-height:35px;
+    	border:1px solid var(--paper-indigo-a100); @apply(--paper-font-label2);
+    	border-radius:5px; -webkit-border-radius:5px;}
+    :host .item {margin-right:10px;}
+  	:host .btndd {float:right; margin:0 5px;}
+	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
+    
+    :host .panels { @apply(--layout-flex); }
+    :host #documents {@apply(--layout-horizontal); height:100%; width:100%;}
+    :host .ddpanel1 { @apply(--layout-vertical); height:100%; width:40%;}
+    :host #ifr { @apply(--layout-flex); margin:5px; overflow-y:auto;
+    	border:1px solid var(--paper-indigo-a200);}
+    :host .source {margin:5px;}
+    :host .mois {height:40%; margin:5px; overflow-y:auto; }
+    :host .docs {@apply(--layout-flex); margin:5px; overflow-y:auto; }
+
+    :host .label {margin: 0 10px; @apply(--paper-font-body2); display:inline-block;}
+    :host .input {display:inline-block;}
+    input[is=iron-input] { @apply(--input-std1); width:100px; margin-bottom:5px;}
+    input[is=iron-input]:focus { @apply(--input-std1-focus); margin-bottom:4px; }
+    
+    :host .jour {padding:3px; margin:0 -3px; cursor:pointer;}
+    :host .seljour, :host .jour:hover, :host .seldoc, :host .doc:hover 
+    	{color:white; background-color:var(--paper-indigo-a700);}
+
+    :host .doc {cursor:pointer;}
+    
+    :host .imois {margin:5px 0;}
+    :host .libmois {float:left; margin:3px 10px 0 0; @apply(--paper-font-body2);
+    	color:var(--paper-indigo-a700); line-height:14px;}
+    :host .ljours { margin-left:20px; @apply(--paper-font-code1);}
+    :host .docs {@apply(--paper-font-code1);}
+    	
+</style>
+	
+	<neon-animated-pages class="panels" attr-for-selected="id" selected="[[viewname(donnees)]]" 
+		entry-animation="slide-from-left-animation" exit-animation="slide-left-animation">
+		<neon-animatable id="donnees">
+			<div class="ddpanel1">Données</div>
+		</neon-animatable>
+		<neon-animatable id="documents">
+			<div class="ddpanel1">
+				<div class="source">
+					<div class="label">Source :</div>
+					<div class="input"><input is="iron-input" 
+						value="{{source::input}}" placeholder="C.2."></div>
+				</div>
+				<div class="mois">
+					<template is="dom-repeat" items="[[lmois]]" as="mois">
+						<div class="imois">
+							<div class="libmois">[[mois.lib]]</div>
+							<div class="ljours">
+							<template is="dom-repeat" items="[[mois.ljours]]" as="jour">
+								<span class$="[[jourClass(jour,selectedJour)]]" on-tap="selectJour">[[jour.jour]]</span>
+							</template>
+							</div>
+						</div>
+					</template>
+				</div>
+				<div class="docs">
+					<template is="dom-repeat" items="[[ldocs]]" as="doc">
+						<div class$="[[docClass(doc.d,selectedDoc.d)]]" on-tap="selectDoc">[[doc.d]]</div>
+					</template>
+				</div>
+			</div>
+			<iframe id="ifr"></iframe>
+		</neon-animatable>
+	</neon-animated-pages>
+</template>
+</dom-module>
+
+<script>
+
+Polymer({
+	is : "lines-view",
+	properties : {
+		error : {type:String, value:""},
+		path: {type:String, value:""},
+		
+		zips: {type:Object, value:{}},
+		lines: {type:Array, value:[]},
+		
+		clines: {type:Array, value:[]},
+		ccols: {type:Array, value:[]},
+		crecordtypes: {type:Array, value:[]},
+		cfields : {type:Array, value:[]},
+		
+		selLine: {type:String, value:""},
+		selCol: {type:String, value:""},
+		selRecordType: {type:String, value:""},
+		selRecord : {type:Number, value:-1),
+		
+		source: {type:String, value:"", observer:"filterLines"},
+	},
+	ready: function() {
+		AC.linesview = this;
+	},
+	display : function(path, zips, lines){
+		this.path = path;
+		this.zips = zips;
+		this.lines = lines;
+	},
+	lineClass : function(line, selLine){
+		return line == selLine ? "line selline" : "line";
+	},
+	colClass : function(col, selCol){
+		return col.id == selCol.id ? "col selcol" : "col";
+	},
+	filterLines : function(newValue, oldValue){
+		if (!this.lines) {
+			this.clines = []; 
+		} else {
+			cl = [];
+			for(var i = 0, l = null; l = this.lines[i]; i++){
+				if (l.startsWith(this.source))
+					cl.push(l);
+			}
+			cl.sort();
+			this.clines = cl;
+		}
+		this.selLine = this.clines.length > 0 ? this.clines[0] : "";
+		this.selectLine2();
+	},
+	selectLine : function(e){
+		this.selLine = e.model.__data__.line;
+		this.selectLine2();
+	},
+	onError : function(err){
+		this.error = err;
+	},
+	selectLine2 : function(){
+		if (!this.selLine){
+			this.ccols = [];
+			this.selCol = null;
+			this.selectCol2();
+		} else {
+			var zipf = this.path + "/" + this.zips[this.selLine];
+			AC.fs.readFile(zipf, function(err, data) {
+	           if (err) {
+	        	   this.onError(err);
+	        	   return;
+	           }
+	           var zip = new jszip(data);
+	           this.ccols = [];
+	           for (var e in zip.files) {
+					var i = e.lastIndexOf("_");
+					var col = e.substring(0, i - 1);
+					var j = e.lastIndexOf(".");
+					var type = e.substring(i + 1, j);
+					var ext = type != "HTML" ? e.substring(j + 1) : "html";
+					var buf = zip.file(e).asArrayBuffer();
+					var data = new Uint8Array(buf);
+					if (type != "PHOTO"){
+						data = AC.decoder.decode(data);
+						if (type != "HTML"){
+							try {
+								data = JSON.parse(data);
+							} catch(e){
+								this.onError("Zip entry " + zipf + ":" + e 
+										+ " json non valide. " + eMessage);
+								return;
+							}
+						}
+					}
+					var t = type == "PHOTO" ? type + "/" + ext : type;
+					this.ccols.push({col:col, type:t , data:data});
+				};
+				if (this.ccols.length > 1)
+					this.ccols.sort(function(a,b){
+						return a.col < b.col ? -1 : (a.col > b.col ? 1 : 0);
+					});
+				this.selCol = this.ccols.length > 0 ? this.ccols[0] : null;
+				this.selectCol2();
+			}.bind(this));
+		}
+	};
+	selectCol : function(e){
+		this.selCol = e.model.__data__.col;
+		this.selectCol2();
+	},
+	selectCol2 : function(e){
+		if (!this.selCol || this.selCol.type == "PHOTO" || this.selCol.type == "HTML" ){
+			this.crecordtypes = [];
+		} else {
+			var rt = [];
+			for(var t in this.selCol.data)
+				rt.push(t);
+			rt.sort();
+			this.crecordtypes = rt;
+		}
+		this.selRecordType = this.crecordtypes.length > 0 ? this.crecordtypes[0] : "";
+		this.selectRecordType2();
+	},
+	selectRecordType : function(e){
+		this.selRecordType = e.model.__data__.recordType;
+		this.selectRecordType2();
+	},
+	selectRecordType2 : function(e){
+		var fields = {};
+		if (!this.selRecordType){
+			this.crecords = [];
+		} else {
+			this.crecords = this.selCol.data[this.selRecordType];
+			for(var i = , r = null; r = this.crecords[i]; i++){
+				for(var f in r)
+					fields[f] = true;
+			}
+			var ff = []
+			for(var f in fields)
+				ff.push(f);
+			ff.sort();
+			this.cfields = ff;
+		}
+		this.selRecord = this.crecords.length > 0 ? this.crecords[0] : null;
+		this.selectRecord2();
+	},
+	selectRecord : function(e){
+		this.selRecord = e.model.__data__.record;
+		this.selectRecord2();
+	},
+	selectRecord2 : function(e){
+		if (!this.selRecord){
+			
+		};
+	}
+	
+});
+</script>
