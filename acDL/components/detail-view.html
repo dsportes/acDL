@@ -188,7 +188,7 @@ Polymer({
 								this.docs = JSON.parse(data);
 							} catch (e) {
 								this.onError("Erreur de syntaxe dans " + this.path 
-										+ "/docs.json impossible. " + err.message);	
+										+ "/docs.json. " + err.message);	
 							}
 						}
 						AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
@@ -198,7 +198,7 @@ Polymer({
 								try {
 									this.lines = JSON.parse(data);
 								} catch (e) {
-									this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json impossible. " + err.message);
+									this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json. " + err.message);
 									return;
 								}
 								this.nbl = this.lines.length;

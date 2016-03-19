@@ -1,0 +1,58 @@
+{
+"FieldSizes":{"__index":4, "gap":3, "gac":3, "codeLivr":3, "prod":6, "ac":3, "ap":3, 
+	"pr":3, "grpCode":3, "grp":3, "version":-1, "dhChange":-1, "type":-2},
+"Calendrier": {
+	"Livr":[["gap", "codeLivr", "gac"], ["gac", "gap", "codeLivr"]],
+	"LivrActives":[["gac"]]},
+"CalendrierGAP": {
+	"Livr":[["gap", "codeLivr", "gac"], ["gac", "gap", "codeLivr"]],
+	"LivrActives":[["gac"]]},
+"Catalogue": {
+	"Excl":[["codeLivr", "prod"]],
+	"LivrActives":[["gac"]],
+	"Prix":[["codeLivr", "prod"], ["prod", "codeLivr"]],
+	"Produit":[["prod", "nom"]]},
+"Directory": {
+	"Entry":[["type","code","initiales"]],
+	"Next":[["type"]]},
+"GAP": {
+	"Entete":[[]],
+	"Contact":[["code","initiales"]]},
+"GAC": {
+	"Entete":[[]],
+	"Contact":[["code","initiales"]]},
+"LivrC": {
+	"Ac":[["ac"]],
+	"AcAp":[["ac","ap"], ["ap","ac"]],
+	"AcApPr":[["ac","ap","pr"],["ap","pr","ac"]],
+	"Ap":[["ap"]],
+	"ApPr":[["ap","pr"]],
+	"Prix":[["prod"]],
+	"Excl":[[]],
+	"Gac":[[]],
+	"Recomp":[[]]},
+"LivrG": {
+	"Ac":[["gap","codeLivr","ac"],["ac","gap","codeLivr"]],
+	"Gac":[["gap","codeLivr"]]},
+"LivrP": {
+	"Ap":[["gac","codeLivr","ap"],["gac","ap","codeLivr"],
+		["codeLivr","gac","ap"],["codeLivr","ap","gac"],
+		["ap","codeLivr","gac"],["ap","gac","codeLivr"]],
+	"Gac":[["gac","codeLivr"],["gac","codeLivr"]],
+	"SGAp":[["ap","codeLivr"],["codeLivr","ap"]],
+	"SG":[["codeLivr"]]},
+"Stats": {
+	"StatLine":[["type","grpCode","code","date","initiales"],
+		["type","grpCode","date","code","initiales"],
+		["type","date","grpCode","code","initiales"],
+		["type","date","code","grpCode","initiales"],
+		["type","code","date","grpCode","initiales"],
+		["type","code","grpCode","date","initiales"]]},
+"StatsMail": {
+	"Stat":[["type","grp"]]},
+"TraceMail": {
+	"Trace":[["code"]]},
+"Tweets": {
+	"Entete":[[]],
+	"Tweet":[["numero"],["codeLivr","numero"]]}	
+}
