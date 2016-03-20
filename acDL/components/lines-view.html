@@ -1,6 +1,8 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/iron-autogrow-textarea/iron-autogrow-textarea.html">
+
 <link rel="import" href="fwk-styles.html">
 
 <dom-module id="lines-view">
@@ -9,7 +11,7 @@
 <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
 
 <style>
-    :host { @apply(--layout-vertical); height:100%; width:100%; }
+    :host { @apply(--layout-vertical); height:100%; width:100%;}
     
     :host .l1 {width:100%; height: 40px; overflow:hidden;}
     :host .l1a {margin:5px;}
@@ -19,6 +21,11 @@
     :host .btngo { padding:2px; border:1px solid rgba(3, 169, 244, 0.23);}
     input[is=iron-input] { @apply(--input-std1); width:100px; margin-bottom:5px;}
     input[is=iron-input]:focus { @apply(--input-std1-focus); margin-bottom:4px; }
+
+    iron-autogrow-textarea, textarea { @apply(--input-std2); width: 90%; margin:0 4%;
+    	vertical-align:top; background-color:white;}
+    iron-autogrow-textarea:focus, textarea:focus { @apply(--input-std2-focus); }
+    :host textarea {overflow:auto; margin-top:2px; height:90px;}
     
     :host .line, :host .col, :host .rectype, :host .record, :host .field 
     	{padding:3px; cursor:pointer; height:20px; overflow:hidden;}
@@ -26,21 +33,23 @@
     :host .selrectype, :host .rectype:hover, :host .selrecord, :host .record:hover
     	{color:white; background-color:var(--paper-indigo-a700);}
     
-    :host .l2 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); @apply(--paper-font-body1);}
-    :host .l2a, :host .l2b, :host .l2c, :host .l3a, :host .l3b2
-    	{padding:5px; border:1px solid var(--paper-indigo-a200); overflow-y:auto;}
-    :host .l2a {width:80px;}
-    :host .l2b {@apply(--layout-flex); flex-grow:4; }
+    :host .l2 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); 
+    	@apply(--paper-font-body1); 
+    	border-top:1px solid var(--paper-blue-grey-100); border-bottom:1px solid var(--paper-indigo-a200);}
+    :host .l2a, :host .l2b, :host .l2c, :host .l3a, :host .l3b2 {padding:5px; overflow-y:auto;}
+    :host .l2a {width:80px; border-right:1px solid var(--paper-blue-grey-100);}
+    :host .l2b {@apply(--layout-flex); flex-grow:4; border-right:1px solid var(--paper-blue-grey-100);}
     :host .l2c {@apply(--layout-flex); flex-grow:2; }
     :host .colType {float:right; overflow:hidden; width: 50%;}
     
     :host .l3 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); @apply(--paper-font-body1);}
-    :host .l3a {width:40%;}
+    :host .l4 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--paper-font-body1); 
+    	padding:5px 0; overflow-y:auto;}
+    :host .l3a {width:40%; border-right:1px solid var(--paper-blue-grey-100);}
     :host .photo {overflow:auto;}
     :host .l3b {@apply(--layout-flex); @apply(--layout-vertical);}
     :host .l3b1 {height:100px; margin:0; padding:0;}
     :host .l3b2 {@apply(--layout-flex); }
-    :host textarea {overflow:auto; width:94%; margin:2px 2%; height:90px;}
     :host .recordIndex { width:30px; text-align:right; height:18px; overflow:hidden; display:inline-block;}
     :host .fieldValue1 { height:18px; overflow:hidden; margin-left: 10px; display:inline-block;}
     :host .fieldName { width:30%; text-align:right; height:20px; overflow:hidden; display:inline-block; font-style:italic; font-weight:bold;}
@@ -65,9 +74,9 @@
 			</template>
 		</div>
 		<div class="l2b">
-			<template is="dom-repeat" items="[[ccols]]">
-				<div class$="[[colClass(index,selCol)]]" on-tap="selectCol">
-					<div class="colType">[[fcoltype(index)]]</div>[[fcolcol(index)]] 
+			<template is="dom-repeat" items="[[ccols]]" as="col">
+				<div class$="[[colClass(col,selCol)]]" on-tap="selectCol">
+					<div class="colType">[[col.type]]</div>[[col.col]] 
 				</div>
 			</template>
 		</div>
@@ -81,6 +90,7 @@
 		</div>
 	</div>	
 
+	<template is="dom-if" if="[[isStd(selCol)]]" >
 	<div class="l3">
 		<div class="l3a">
 			<template is="dom-if" if="[[!isPhoto(selCol)]]" >		
@@ -91,10 +101,8 @@
 				</div>
 			</template>
 			</template>
-			<template is="dom-if" if="[[isPhoto(selCol)]]" >
-				<img class="photo" src$="[[selCol.data]]"></img>			
-			</template>
 		</div>
+		
 		<div class="l3b">
 			<div class="l3b1">
 				<textarea class="html" value="[[cfieldvalue]]"></textarea>
@@ -108,7 +116,20 @@
 				</template>
 			</div>
 		</div>
-	</div>	
+	</div>
+	</template>
+	
+	<template is="dom-if" if="[[isPhoto(selCol)]]" >
+	<div class="l4">
+		<img class="photo" src$="[[cfieldphoto]]"></img>
+	</div>			
+	</template>
+
+	<template is="dom-if" if="[[isHtml(selCol)]]" >
+	<div class="l4">
+		<iron-autogrow-textarea class="html" value="[[cfieldhtml]]"></iron-autogrow-textarea>
+	</div>			
+	</template>
 	
 </template>
 </dom-module>
@@ -152,6 +173,9 @@ Polymer({
 	onError : function(err){
 		this.error = err;
 	},
+	isStd : function(selCol){
+		return !selCol || (!selCol.type.startsWith("PHOTO") && !selCol.type.startsWith("HTML"));
+	},
 	isPhoto : function(selCol){
 		return selCol ? selCol.type.startsWith("PHOTO") : false;
 	},
@@ -161,19 +185,9 @@ Polymer({
 	lineClass : function(line, selLine){
 		return line == selLine ? "line selline" : "line";
 	},
-	colClass : function(index, selCol){
-		if (!AC.linesview.ccols.length) return "col";
-		var item = AC.linesview.ccols[index];
-		return item == selCol ? "col selcol" : "col";
+	colClass : function(col, selCol){
+		return col == selCol ? "col selcol" : "col";
 	},
-	fcoltype : function(index){
-		if (!AC.linesview.ccols.length) return "";
-		return AC.linesview.ccols[index].type;
-	},
-	fcolcol : function(index){
-		if (!AC.linesview.ccols.length) return "";
-		return AC.linesview.ccols[index].col;
-	},	
 	recordTypeClass : function(recordType, selRecordType){
 		return recordType == selRecordType ? "rectype selrectype" : "rectype";
 	},
@@ -184,6 +198,7 @@ Polymer({
 		return field == selField ? "field selfield" : "field";
 	},
 	filterLines : function(newValue, oldValue){
+		AC.info("Sélection des lignes");
 		this.$.vline.innerHTML = "";
 		this.$.vcell.innerHTML = "";
 		this.clines = [];
@@ -197,6 +212,8 @@ Polymer({
 		this.selRecordType = null;
 		this.selField = "";
 		this.cfieldvalue = "";
+		this.cfieldhtml = "";
+		this.cfieldphoto = "";
 		
 		if (this.lines) {
 			var cl = [];
@@ -227,62 +244,73 @@ Polymer({
 		this.selRecordType = null;
 		this.selField = "";
 		this.cfieldvalue = "";
+		this.cfieldhtml = "";
+		this.cfieldphoto = "";
 		if (!this.selLine) return;
-		setTimeout(function(){ this.selectLine3();}.bind(this), 50);
+		this.selectLine3();
 	},
 	selectLine3 : function(){
 		var x = this.zips[this.selLine];
+		this.zipName = x;
 		var i = x.lastIndexOf("_");
 		this.$.vline.innerHTML = "Version ligne: " + AC.Util.editDHS(x.substring(i+1, i+18));
 		var zipf = this.path + "/" + x;
+		AC.info("Chargement de " + x);
 		AC.fs.readFile(zipf, function(err, data) {
-           if (err) {
-        	   this.onError(err);
-        	   return;
-           }
-           var zip = new AC.jszip(data);
-           var ccols = [];
-           for (var e in zip.files) {
-				var i = e.lastIndexOf("_");
-				var col = e.substring(0, i);
-				var j = e.lastIndexOf(".");
-				var type = e.substring(i + 1, j);
-				var ext = type != "HTML" ? e.substring(j + 1) : "html";
-				var buf = zip.file(e).asArrayBuffer();
-				var data = new Uint8Array(buf);
-				if (type != "PHOTO"){
-					data = AC.decoder.decode(data);
-					if (type != "HTML"){
-						try {
-							data = JSON.parse(data);
-						} catch(e){
-							this.onError("Zip entry " + zipf + ":" + e 
-									+ " json non valide. " + eMessage);
-							return;
-						}
-					}
-				} else {
-					var p = "data:image/" + ext + ";base64,";
-					var b64 = AC.Base64.encode(data);
-					data = p + b64;
-				}
-				var t = type == "PHOTO" ? type + "/" + ext : type;
-				ccols.push({col:col, type:t , data:data});
-			};
-			if (ccols.length > 1)
-				ccols.sort(function(a,b){
-					return a.col < b.col ? -1 : (a.col > b.col ? 1 : 0);
-				});
-			this.ccols = ccols;
-			if (this.ccols.length > 0)
-				this.selCol =  this.ccols[0];
-			this.selectCol2();
+			if (err)
+				AC.error("Chargement en erreur", zipf + " - " + err.message);
+			else
+				this.unzip(data, zipf);
 		}.bind(this));
 	},
+	unzip : function(data, zipf){
+        this.zip = new AC.jszip(data);
+        var ccols = [];
+        this.entries = [];
+        for (var e in this.zip.files) this.entries.push(e);
+        this.entries.sort();
+        var tot = this.entries.length;
+        for (var nb = 0, e = ""; e = this.entries[nb]; nb++) {
+			var i = e.lastIndexOf("_");
+			var col = e.substring(0, i);
+			var j = e.lastIndexOf(".");
+			var type = e.substring(i + 1, j);
+			var ext = type != "HTML" ? e.substring(j + 1) : "html";
+			var t = type == "PHOTO" ? type + "/" + ext : type;
+			ccols.push({col:col, type:t , entry:e, ext:ext});
+		};
+		if (ccols.length > 1)
+			ccols.sort(function(a,b){
+				return a.col < b.col ? -1 : (a.col > b.col ? 1 : 0);
+			});
+		this.ccols = ccols;
+		if (this.ccols.length > 0)
+			this.selCol =  this.ccols[0];
+		this.selectCol2();		
+	},
+	getData : function(sc){
+		AC.info("Unzip de " + this.zipName, sc.entry);
+		var buf = this.zip.file(sc.entry).asArrayBuffer();
+		var data = new Uint8Array(buf);
+		if (!sc.type.startsWith("PHOTO")){
+			data = AC.decoder.decode(data);
+			if (sc.type != "HTML"){
+				try {
+					data = JSON.parse(data);
+				} catch(e){
+	       			AC.error("Unzip de " + this.zipName + ". Syntaxe JSON", e.message);
+					return;
+				}
+			}
+		} else {
+			var p = "data:image/" + sc.ext + ";base64,";
+			var b64 = AC.Base64.encode(data);
+			data = p + b64;
+		}
+		return data;
+	},
 	selectCol : function(e){
-		var i = e.model.__data__.index;
-		if (!AC.linesview.ccols.length) return null;
-		this.selCol = AC.linesview.ccols[i];
+		this.selCol = e.model.__data__.col;
 		this.selectCol2();
 	},
 	selectCol2 : function(){
@@ -294,15 +322,23 @@ Polymer({
 		this.selRecordType = null;
 		this.selField = "";
 		this.cfieldvalue = "";
-		setTimeout(function(){ this.selectCol3();}.bind(this), 50);
+		this.cfieldhtml = "";
+		this.selectCol3();
 	},
 	selectCol3 : function(){
+		if (this.selCol && !this.selCol.data)
+			this.selCol.data = this.getData(this.selCol);
 		if (this.isHtml(this.selCol)){
-			this.cfieldvalue = this.selCol.data;
+			this.cfieldhtml = this.selCol.data;
+			AC.info("OK : " + this.selCol.col + "/" + this.selCol.type);
 			return;
 		}
-		if (!this.selCol || this.isPhoto(this.selCol))
+		if (!this.selCol || this.isPhoto(this.selCol)) {
+			this.cfieldphoto = this.selCol.data;
+			AC.info("OK : " + this.selCol.col + "/" + this.selCol.type);
 			return;
+		}
+		AC.info("Analyse des items de " + this.selCol.col + "/" + this.selCol.type);
 		var rt = [];
 		for(var t in this.selCol.data) {
 			var a = this.selCol.data[t];
@@ -327,7 +363,7 @@ Polymer({
 		this.selRecord = null;
 		this.selField = "";
 		if (!this.selRecordType) return;
-		setTimeout(function(){ this.selectRecordType3();}.bind(this), 50);
+		this.selectRecordType3();
 	},
 	selectRecordType3 : function(){	
 		var fields = {};
@@ -343,18 +379,20 @@ Polymer({
 					v = vv;
 			}
 		}
+		AC.info("Calcul de la version de " + this.selCol.col + "/" + this.selCol.type);
 		crecords = this.selCol.data[this.selRecordType.type];
 		if (!Array.isArray(crecords))
 			crecords = [crecords];
 		for(var i = 0, r = null; r = crecords[i]; i++){
 			r.__index = i;
 			for(var f in r)
-				if (f != "ZZ")
+				if (f != "ZZ" && !fields[f])
 					fields[f] = true;
 		}
 		var ff = []
 		var x = AC.sorts[this.selCol.type];
 		var keys = !x ? [] :( x[this.selRecordType.type] ? x[this.selRecordType.type] : []);
+		AC.info("Recherche des champs de " + this.selCol.col + "/" + this.selCol.type);
 		this.ckeys = {};
 		for(var i = 0, k = null; k = keys[i]; i++){
 			var name = "_" + k.join("_");
@@ -382,6 +420,8 @@ Polymer({
 		this.sortRecords(rx, this.selRecord);
 	},
 	sortRecords : function(crecords, selRecord){
+		AC.info("Edition des records de " + this.selCol.col + "/" + 
+				this.selCol.type + "/" + this.selField);
 		if (crecords.length > 1) {
 			for(var i = 0, r = null; r = crecords[i]; i++)
 				r.ZZ = this.editField(r, this.selField);
@@ -391,7 +431,7 @@ Polymer({
 		}
 		this.crecords = crecords;
 		if (!selRecord)
-			this.selRecord = this.crecords.length ? this.crecords[0] : null;
+			this.selRecord = crecords.length ? crecords[0] : null;
 		var val = "";
 		if (this.selField && !this.selField.startsWith("_") && this.selRecord) {
 			var vx = this.selRecord[this.selField];
@@ -399,15 +439,18 @@ Polymer({
 				val = vx;
 		}
 		this.cfieldvalue = val;
+		AC.info("OK : " + this.selCol.col + "/" + this.selCol.type + "/" + this.selField);
 	},
 	editField : function(r, f){
 		if (!r || !f) return "";
+		if (f.charAt(0) == "_") {
 		var k = AC.linesview.ckeys ? AC.linesview.ckeys[f] : null;
-		if (k) {
-			var val = "";
-			for(var i = 0, f2 = ""; f2 = k[i]; i++)
-				val += AC.linesview.editField(r, f2) + " ";
-			return val;
+			if (k) {
+				var val = "";
+				for(var i = 0, f2 = ""; f2 = k[i]; i++)
+					val += AC.linesview.editField(r, f2) + " ";
+				return val;
+			}
 		}
 		var lg = AC.sorts.FieldSizes[f];
 		var v = r[f];

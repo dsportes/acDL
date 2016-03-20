@@ -1,0 +1,65 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="fwk-styles.html">
+
+<dom-module id="status-bar">
+<template>
+<style include="fwk-styles"></style>
+
+<style>
+	:host {	width:100%; color:white; background-color:var(--paper-blue-grey-700); 
+		padding:2px 5px; margin:0; }
+	
+	:host .error {background-color:var(--paper-red-a700);}
+	:host .progress { width:80px; float:right; margin:5px 10px 5px 20px; @apply(--paper-font-body2); 
+		text-align:right; border-radius:3px; -webkit-border-radius:3px; text-align:center;
+		background-color:var(--paper-blue-grey-100); color:black;
+	}
+	
+	:host .msg {@apply(--paper-font-body2);}
+	:host .detail {@apply(--paper-font-code10);}
+	
+</style>
+	<div class="progress">[[done]]&nbsp;/&nbsp;[[total]]</div>
+	<span class$="[[msgClass(ok)]]">[[msg]]</span>
+	<span class="detail">[[detail]]</span>	
+</template>
+
+<script>
+  Polymer({
+    is: "status-bar",
+    
+	properties : {
+		msg : {type:String, value:""},
+		detail : {type:String, value:""},
+		done : {type:String, value:""},
+		total : {type:String, value:""},
+		msg : {type:String, value:""},
+	},
+    ready: function() {
+    	AC.sb = this;
+    	AC.eventEmitter.on("sbError", function(ev){
+        	this.msg = ev.msg ? ev.msg : "";
+        	this.detail = ev.detail ? ev.detail : "";
+        	this.ok = false;
+    	}.bind(this));
+    	AC.eventEmitter.on("sbInfo", function(ev){
+        	this.msg = ev.msg ? ev.msg : "";
+        	this.detail = ev.detail ? ev.detail : "";
+        	this.ok = true;
+        	this.total = "";
+        	this.done = "";
+    	}.bind(this));
+    	AC.eventEmitter.on("sbProgress", function(ev){
+        	this.msg = ev.msg ? ev.msg : "";
+        	this.detail = ev.detail ? ev.detail : "";
+        	this.ok = true;
+        	this.total = typeof ev.total == "undefined" ? "?" : "" + ev.total;
+        	this.done = typeof ev.done == "undefined" ? "?" : "" + ev.done;
+    	}.bind(this));
+    },
+    msgClass : function(ok){
+    	return ok ? "msg" : "msg error";
+    }    
+  });
+</script>
+</dom-module>

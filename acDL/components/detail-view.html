@@ -19,7 +19,7 @@
   	:host .btndd {float:right; margin:0 5px;}
 	:host .error { clear:both; margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
-    :host .panels { @apply(--layout-flex); }
+    :host .panels { @apply(--layout-flex); top:-15px;}
     :host lines-view {height:100%; width:100%;}
     :host #documents {@apply(--layout-horizontal); height:100%; width:100%;}
     :host .ddpanel1 { @apply(--layout-vertical); height:100%; width:40%;}
@@ -47,7 +47,7 @@
     :host .docs {@apply(--paper-font-code1);}
     	
 </style>
-	<div>
+	<div style="margin:35px 0 10px 0">
 	<paper-button on-tap="versdesktop" raised class="title">Retour à la synthèse des dumps</paper-button>
 	<div class="title">Détail du dump [[type]] : [[dumpitem.dh]]</div>
 	<div class="itemgroup">
@@ -63,7 +63,6 @@
 		</div>
 		<div>[[lines.length]] lignes - [[docs.length]] documents</div>
 	</div>
-	<div class="error">[[error]]</div>
 	</div>
 	
 	<neon-animated-pages class="panels" attr-for-selected="id" selected="[[viewname(donnees)]]" 
@@ -339,7 +338,7 @@ Polymer({
 		doc.close();
 	},
 	onError : function(err){
-		this.error = err;
+		AC.error(err);
 	}
 	
 });

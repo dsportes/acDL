@@ -20,9 +20,10 @@
     :host .suivi { margin:10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
     	border-radius:5px; -webkit-border-radius:5px; @apply(--paper-font-body2);}
     :host .phase { font-weight:bold; font-style:italic; @apply(--paper-font-body3);}
-	:host .error { margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
 </style>
+	<div class="fillerSB"></div>
+
 	<paper-button on-tap="versdesktop" raised class$="[[backClass(status)]]">Retour à la synthèse des dumps</paper-button>
 	<div class="title">Dump [[type]] : [[name]]</div>
 
@@ -61,7 +62,6 @@
 			<div hidden$="p2(status)">Documents dumpés : [[cd]] sur [[nbd]] - Volume des documents : [[editv(vd)]]</div>
 		</div>
 	</template>	
-	<div class="error">[[error]]</div>
 	
 </template>
 </dom-module>
@@ -87,7 +87,6 @@ Polymer({
 		versiond: {type:String, value:""},
 		
 		phase: {type:String, value:""},
-		error: {type:String, value:""},
 		nbl: {type:Number, value:0},
 		cl: {type:Number, value:0},
 		vc: {type:Number, value:0},
@@ -159,9 +158,10 @@ Polymer({
 		this.name = AC.desktop.newdumpdir(this.ptd, this.partiel);
 		if (!this.name){
 			this.name = "?";
-			this.error = "Création du directory de dump impossible !";
+			AC.error("Création du directory de dump impossible");
 			return;
 		}
+		AC.info("Dump lancé. Directory : " + this.name);
 		this.status = 1;
 		this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
 		var f = {}
@@ -182,17 +182,17 @@ Polymer({
 		
 	setpause : function(){
 		this.pause = 1;
-		this.error = "Pause demandée (applicable à la fin de la requête en cours)";
+		AC.error("Pause demandée (applicable à la fin de la requête en cours)");
 	},
 	
 	reprise : function(){
-		this.error = "";
+		AC.info("Reprise");
 		this.pause = 0;
 		this.working();
 	},
 	
 	abandon : function() {
-		this.error = "";
+		AC.info("Dump abandonné");
 		this.pause = 0;
 		this.reset();
 		this.resetcpt();
@@ -202,13 +202,13 @@ Polymer({
 	
 	enPause : function(){
 		if (this.pause == 1) {
-			this.error = "Dump en pause";
+			AC.error("Dump en pause");
 			this.pause = 2;
 		}	
 	},
 
 	onError : function(err){
-		this.error = err;
+		AC.error(err);
 		this.pause = 2;
 	},
 
@@ -279,26 +279,29 @@ Polymer({
 	working : function(){
 		if (this.pause)
 			return;
-		this.error = "";
 		switch (this.status){
 		case 1 : {
 			this.resetcpt();
 			this.phase = "Obtention de la liste des lignes";
+			AC.info(this.phase);
 			this.srv.linesS(this.line, this.version);
 			return;
 		}
 		case 2 : {
 			this.phase = "Réception des lignes de cellules";
+			AC.progress(this.phase, "", this.cl, this.nbl);
 			this.srv.dumpS(this.lines[this.cl], this.col, this.version, this.types);
 			return;
 		}
 		case 3 : {
 			this.phase = "Obtention de la liste des documents";
+			AC.info(this.phase);
 			this.srv.docsS(this.line, this.versiond);
 			return;
 		}
 		case 4 : {
 			this.phase = "Réception des documents";
+			AC.progress(this.phase, "", this.cd, this.nbd);
 			this.srv.dumpD(this.docs[this.cd]);
 			return;
 		}
@@ -309,6 +312,7 @@ Polymer({
 				this.srv = null;
 			}
 			this.phase = "Dump terminé avec succès, renommage du directory";
+			AC.info(this.phase);
 			AC.desktop.commitdir(self.name, self.partiel, (err) => {
 				var p1 = self.name;
 				if (err) {
@@ -325,6 +329,7 @@ Polymer({
 		}
 		case 9 : {
 			this.phase = "Dump terminé avec succès, directory renommé !";
+			AC.info(this.phase);
 		}
 		}
 	}

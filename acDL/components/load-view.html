@@ -21,9 +21,10 @@
     :host .suivi { margin:10px; padding:0 5px; border:1px solid var(--paper-indigo-a100);
     	border-radius:5px; -webkit-border-radius:5px; @apply(--paper-font-body2);}
     :host .phase { font-weight:bold; font-style:italic; @apply(--paper-font-body3);}
-	:host .error { margin:10px; @apply(--paper-font-code1); font-weight:bold; color:red;}
     
 </style>
+	<div class="fillerSB"></div>
+	
 	<paper-button on-tap="versdesktop" raised class$="[[backClass(status)]]">Retour à la synthèse des dumps</paper-button>
 	<div class$="[[titleClass(ptd)]]">Restauration DB [[type]] depuis [[name]]</div>
 
@@ -56,7 +57,6 @@
 			<div hidden$="p2(status)">Documents restaurées : [[cd]] sur [[nbd]] - Volume des documents : [[editv(vd)]]</div>
 		</div>
 	</template>
-	<div class="error">[[error]]</div>
 	
 	<paper-dialog id="confirmer" entry-animation="fade-in-animation" exit-animation="fade-out-animation">
 		<p>Waouh ! Restaurer la base de données de PRODUCTION ! Vraiment ?</p>
@@ -87,7 +87,6 @@ Polymer({
 		versiond: {type:String, value:""},
 		
 		phase: {type:String, value:""},
-		error: {type:String, value:""},
 		nbl: {type:Number, value:0},
 		cl: {type:Number, value:0},
 		vc: {type:Number, value:0},
@@ -233,17 +232,17 @@ Polymer({
 
 	setpause : function(){
 		this.pause = 1;
-		this.error = "Pause demandée (applicable à la fin de la requête en cours)";
+		AC.error("Pause demandée (applicable à la fin de la requête en cours)");
 	},
 	
 	reprise : function(){
-		this.error = "";
+		AC.info("Reprise");
 		this.pause = 0;
 		this.working();
 	},
 	
 	abandon : function() {
-		this.error = "";
+		AC.info("Chargement abandonné");
 		this.pause = 0;
 		this.reset();
 		this.resetcpt();
@@ -253,13 +252,13 @@ Polymer({
 	
 	enPause : function(){
 		if (this.pause == 1) {
-			this.error = "Restauration en pause";
+			AC.error("Restauration en pause");
 			this.pause = 2;
 		}	
 	},
 
 	onError : function(err){
-		this.error = err;
+		AC.error(err);
 		this.pause = 2;
 	},
 
@@ -300,9 +299,10 @@ Polymer({
 		var self = this;
 		if (this.pause)
 			return;
-		this.error = "";
 		switch (this.status){
 		case 1 : {
+			this.phase = "Lecture du fichier lignes.json";
+			AC.info(this.phase);
 			AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
 				if (err)
 					self.onError("Lecture de " + self.path + "/lignes.json impossible. " + err.message);
@@ -327,6 +327,7 @@ Polymer({
 		}
 		case 2 : {
 			this.phase = "Restauration des lignes de cellules";
+			AC.progress(this.phase, null, this.cl, this.nbl);
 			var line = this.lines[this.cl];
 			var fn = this.zips[line];
 			if (!fn)
@@ -336,6 +337,8 @@ Polymer({
 			return;
 		}
 		case 3 : {
+			this.phase = "Lecture du fichier docs.json";
+			AC.info(this.phase);
 			AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
 				if (err)
 					self.onError("Lecture de " + this.path + "/docs.json impossible. " + err.message);
@@ -357,6 +360,7 @@ Polymer({
 		}
 		case 4 : {
 			this.phase = "Restauration des documents";
+			AC.progress(this.phase, null, this.cd, this.nbd);
 			var doc = this.docs[this.cd];
 			var i = doc.lastIndexOf("-");
 			i = doc.lastIndexOf("-", i - 1);
@@ -384,6 +388,7 @@ Polymer({
 			if (this.srv)
 				this.srv.close();
 			this.phase = "Restauration terminée avec succès";
+			AC.info(this.phase);
 			return;
 		}
 		}

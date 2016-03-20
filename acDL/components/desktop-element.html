@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animated-pages.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animatable.html">
 <link rel="import" href="../bower_components/neon-animation/neon-animations.html">	
@@ -17,14 +18,13 @@
 
 <style>
 	:host { }
-	
-	neon-animated-pages { position:inherit;}
-	neon-animatable { @apply(--layout-center-center); overflow-y:auto; }
+		
+	neon-animated-pages { position:inherit; }
+	neon-animatable { overflow-y:auto; top:-30px !important;}
 		
 	:host .desktop { @apply(--layout-vertical); height:100%; }
-	:host .topbar {padding:2px; }
-	:host .panels { @apply(--flex); @apply(--layout-vertical); height:100%; 
-		padding:2px; overflow-y:auto;}
+	:host .topbar { padding:2px; }
+	:host .panels { @apply(--flex); @apply(--layout-vertical); height:100%; padding:2px; overflow-y:auto;}
 	:host dir-panel { flex-grow:2; }
 	
 	:host .title { text-align:right; @apply(--paper-font-title2); color:var(--paper-indigo-a700);
@@ -56,7 +56,7 @@
 		
 		<neon-animatable id="desktop">
 		<div class="desktop">
-			<div class="topbar">
+			<div class="topbar fillerSB">
 				<div class="title">Dump / Load des bases Alterconsos</div>
 				<div class="btnFile" on-tap="btnFileClick">Répertoire des dumps (cliquer pour changer)
 					<div class="fic">{{dirpath}}</div>
@@ -83,21 +83,16 @@
 		<neon-animatable id="dump" ptd:"[[currentptd]]">
 			<dump-view></dump-view>
 		</neon-animatable>
+		
 		<neon-animatable id="load" ptd:"[[currentptd]]">
 			<load-view></load-view>
 		</neon-animatable>
+		
 		<neon-animatable id="detail" ptd:"[[currentptd]]">
 			<detail-view></detail-view>
 		</neon-animatable>
 		
 	</neon-animated-pages>
-
-	
-	<!-- 
-    <img id="img"></img>
-    <p id="info"></p>
-    <iframe id="ifr" style="width:200px; height:200px;"></iframe>
-     -->
 </template>
 
 <script>
@@ -114,6 +109,7 @@
 	},
   	
 	backtodesktop : function(){
+		AC.info("");
 		this.viewname = "desktop";
 	},
 

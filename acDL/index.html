@@ -7,11 +7,14 @@
 	    <script src="node_modules/util.js"></script>
 	    <script src="node_modules/server.js"></script>
 	    <link rel="import" href="components/desktop-element.html">
+	    <link rel="import" href="components/status-bar.html">
 	</head>
 	<style>
-		body { height:100%; width:100%; margin:0; padding:0; }
+		body { height:100%; width:100%; margin:0; padding:0; overflow:hidden; }
+		status-bar {position:fixed; height:35px; bottom:0;}
 	</style>
 	<body>
 		<desktop-element></desktop-element>
+		<status-bar></status-bar>
 	</body>
 </html>
