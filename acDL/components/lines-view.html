@@ -18,7 +18,7 @@
     :host .l1b {float:right; width:50%; @apply(--paper-font-body2); line-height:20px;}
     :host .label {margin: 0 10px; @apply(--paper-font-body2); display:inline-block;}
     :host .input {display:inline-block;}
-    :host .btngo { padding:2px; border:1px solid rgba(3, 169, 244, 0.23);}
+    :host .btngo { padding:2px; border:2px solid rgba(3, 169, 244, 0.23);}
     input[is=iron-input] { @apply(--input-std1); width:100px; margin-bottom:5px;}
     input[is=iron-input]:focus { @apply(--input-std1-focus); margin-bottom:4px; }
 
@@ -35,17 +35,17 @@
     
     :host .l2 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); 
     	@apply(--paper-font-body1); 
-    	border-top:1px solid var(--paper-blue-grey-100); border-bottom:1px solid var(--paper-indigo-a200);}
+    	border-top:2px solid var(--paper-blue-grey-100); border-bottom:2px solid var(--paper-blue-grey-100);}
     :host .l2a, :host .l2b, :host .l2c, :host .l3a, :host .l3b2 {padding:5px; overflow-y:auto;}
-    :host .l2a {width:80px; border-right:1px solid var(--paper-blue-grey-100);}
-    :host .l2b {@apply(--layout-flex); flex-grow:4; border-right:1px solid var(--paper-blue-grey-100);}
+    :host .l2a {width:80px; border-right:2px solid var(--paper-blue-grey-100);}
+    :host .l2b {@apply(--layout-flex); flex-grow:4; border-right:2px solid var(--paper-blue-grey-100);}
     :host .l2c {@apply(--layout-flex); flex-grow:2; }
     :host .colType {float:right; overflow:hidden; width: 50%;}
     
     :host .l3 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); @apply(--paper-font-body1);}
     :host .l4 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--paper-font-body1); 
     	padding:5px 0; overflow-y:auto;}
-    :host .l3a {width:40%; border-right:1px solid var(--paper-blue-grey-100);}
+    :host .l3a {width:40%; border-right:2px solid var(--paper-blue-grey-100);}
     :host .photo {overflow:auto;}
     :host .l3b {@apply(--layout-flex); @apply(--layout-vertical);}
     :host .l3b1 {height:100px; margin:0; padding:0;}
@@ -454,13 +454,13 @@ Polymer({
 		}
 		var lg = AC.sorts.FieldSizes[f];
 		var v = r[f];
-		if (typeof v == 'undefined') return "";
-		if (!lg) return v;
+		if (typeof v == 'undefined') 
+			return lg == -2 ? "0" : "";
+		if (!lg) 
+			return v;
 		if (lg == -1)
 			return new Date(v).stdFormat() + " - " + v;
 		var vx = "" + v;
-		if (lg == -2)
-			return v ? vx : "0";
 		if (vx.length < lg)
 			return "            ".substring(0, lg - vx.length) + vx;
 		else
