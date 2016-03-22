@@ -170,6 +170,7 @@ Polymer({
 		if (this.types) f.types = this.types;
 		if (this.version) f.version = this.version;
 		if (this.versiond) f.versiond = this.versiond;
+		this.normalize(f);
 		f.url = AC.desktop.url(this.ptd);
 		var x = JSON.stringify(f);
 		var self = this;
@@ -213,62 +214,85 @@ Polymer({
 	},
 
 	onDone : function(text) {
-		var self = this;
 		switch (this.status){
 		case 1 : {
 			try {
 				this.lines = JSON.parse(text);
 			} catch (e){
-				self.onError("Erreur de syntaxe dans lignes.json\n" + e.message);	
+				this.onError("Erreur de syntaxe dans lignes.json\n" + e.message);	
 				return;
 			}
 			this.nbl = this.lines.length;
-			AC.fs.writeFile(this.srv.dirName + "lignes.json", text, (err) => {
+			this.cl = 0;
+			AC.fs.writeFile(this.srv.dirName + "lignes.json", text, function(err){
 				if (err) {
-					self.onError("Impossible d'écrire lignes.json dans " + self.srv.dirName + "\n" + err.message);
+					this.onError("Impossible d'écrire lignes.json dans " + this.srv.dirName + "\n" + err.message);
 					return;
 				}
-				self.status = this.nbl ? 2 : 3;
-				self.enPause();
-				self.working();
+				for(var i = 0, l = null; l = this.lines[i]; i++) {
+					var d = this.srv.dirName + l + "line";
+					try {
+						AC.fs.mkdirSync(d);
+					} catch(e) {
+						this.onError("Impossible de créet le directory " + d + "\n" + err.message);
+					}
+				}
+				this.status = this.nbl ? 2 : 4;
+				this.enPause();
+				this.working();
 				return;
-			});
+			}.bind(this));
 			return;
 		}
 		case 2 : {
-			this.vc += text;
 			this.cl++;
-			if (this.nbl == this.cl)
+			if (this.nbl == this.cl) {
+				this.cl = 0;
+				this.batch = -1;
 				this.status = 3;
+			}
 			this.enPause();
 			this.working();
 			return;
 		}
 		case 3 : {
+			this.vc += text;
+			this.batch++;
+			if (this.batch == this.batches.length){
+				this.cl++;
+				this.batch = -1;
+				if (this.nbl == this.cl)
+					this.status = 4;
+			}
+			this.enPause();
+			this.working();
+			return;
+		}
+		case 4 : {
 			try {
 				this.docs = JSON.parse(text);
 			} catch (e){
-				self.onError("Erreur de syntaxe dans docs.json\n" + e.message);	
+				this.onError("Erreur de syntaxe dans docs.json\n" + e.message);	
 				return;
 			}
 			this.nbd = this.docs.length;
-			AC.fs.writeFile(this.srv.dirName + "docs.json", text, (err) => {
+			AC.fs.writeFile(this.srv.dirName + "docs.json", text, function(err) {
 				if (err) {
 					self.onError("Impossible d'écrire docs.json dans " + this.srv.dirName + "\n" + err.message);
 					return;
 				}
-				self.status = this.nbd ? 4 : 5;
-				self.enPause();
-				self.working();
+				this.status = this.nbd ? 5 : 6;
+				this.enPause();
+				this.working();
 				return;
-			});
+			}.bind(this));
 			return;
 		}
-		case 4 : {
+		case 5 : {
 			this.vd += text;
 			this.cd++;
 			if (this.nbd == this.cd)
-				this.status = 5;
+				this.status = 6;
 			this.enPause();
 			this.working();
 			return;
@@ -288,43 +312,82 @@ Polymer({
 			return;
 		}
 		case 2 : {
-			this.phase = "Réception des lignes de cellules";
+			var l = this.lines[this.cl];
+			this.phase = "Réception de Versions de la ligne " + l;
 			AC.progress(this.phase, "", this.cl, this.nbl);
-			this.srv.dumpS(this.lines[this.cl], this.col, this.version, this.types);
+			this.srv.dumpV(l);
 			return;
 		}
 		case 3 : {
+			if (this.batch == -1) {
+				var p = this.srv.dirName + this.lines[this.cl] + "line/Versions.json.gz";
+				AC.fs.readFile(p, null, function(err, data) {
+					if (err)
+						this.onError("Lecture de " + p + " impossible. " + err.message);
+					else {
+						try {
+							var d2 = AC.decoder.decode(pako.inflate(data));
+							var versions = JSON.parse(d2);
+							this.batches = this.buildBatches(versions);
+							if (this.batches.length) {
+								this.batch = 0;
+								this.status = 3;
+								this.enPause();
+								this.working();
+								return;
+							} else {
+								this.batch = -1;
+								this.cl++;
+								if (this.cl == this.nbl)
+									this.status = 4;
+								this.enPause();
+								this.working();
+								return;
+							}
+						} catch (e) {
+							this.onError("Erreur de syntaxe dans " + p + ". " + err.message);	
+						}
+					}
+				}.bind(this));
+				return;
+			}
+			var l = this.lines[this.cl];
+			this.phase = "Réception des cellules de la ligne " + l + " - lot : " + this.batch;
+			AC.progress(this.phase, "", this.cl + (this.batch / 1000), this.nbl);
+			this.srv.dumpC(this.lines[this.cl], this.batches[this.batch], this.batch);
+			return;
+		}
+		case 4 : {
 			this.phase = "Obtention de la liste des documents";
 			AC.info(this.phase);
 			this.srv.docsS(this.line, this.versiond);
 			return;
 		}
-		case 4 : {
+		case 5 : {
 			this.phase = "Réception des documents";
 			AC.progress(this.phase, "", this.cd, this.nbd);
 			this.srv.dumpD(this.docs[this.cd]);
 			return;
 		}
-		case 5 : {
-			var self = this;
+		case 6 : {
 			if (this.srv) {
 				this.srv.close();
 				this.srv = null;
 			}
 			this.phase = "Dump terminé avec succès, renommage du directory";
 			AC.info(this.phase);
-			AC.desktop.commitdir(self.name, self.partiel, (err) => {
-				var p1 = self.name;
+			AC.desktop.commitdir(this.name, this.partiel, function(err){
+				var p1 = this.name;
 				if (err) {
-					self.onError("Impossible de renommer le directory " + p1 +
+					this.onError("Impossible de renommer le directory " + p1 +
 							" dans " + AC.desktop.dirpath + "\nExplorer ouvert dessus ?\n" 
 							+ err.message);
 				} else {
-					self.name = p1.substring(0, p1.length - 1) + (self.partiel ? "P" : "C");
-					self.status = 9;
-					self.working();
+					this.name = p1.substring(0, p1.length - 1) + (this.partiel ? "P" : "C");
+					this.status = 9;
+					this.working();
 				}
-			});
+			}.bind(this));
 			return;
 		}
 		case 9 : {
@@ -332,6 +395,72 @@ Polymer({
 			AC.info(this.phase);
 		}
 		}
+	},
+	
+	split : function(s){
+		if (!s) return [];
+		var a = s.split(" ");
+		var b = [];
+		for(var x in a){
+			var y = x.trim();
+			if (y)
+				b.push(y);
+		}
+		return b;
+	},
+	
+	normalize : function(f){
+		if (!f.version)
+			this.versionN = "20000101000000";
+		else {
+			if (f.version.length <= 14)
+				this.versionN = f.version + "00000000000000".substring(0, 14 - f.version.length);
+			else
+				this.versionN = f.version.substring(0, 14);
+		}
+		this.colN = this.split(f.col);
+		this.typesN = this.split(f.types);
+	},
+	
+	buildBatches : function(versions){
+		var b = [];
+		var i = 0;
+		var j = 0;
+		for(var k = 0, v = null; v = versions.Version[k]; k++){
+			if (j == 10){
+				i++;
+				j = 0;
+			}
+			var vx = new Date(v.version).format("YmdHis");
+			if (vx < this.versionN) continue;
+			var ok = true;
+			if (this.colN.length) {
+				var ok = false;
+				for(var ii = 0, s = null; s = this.colN[ii]; ii++)
+					if (v.column.startsWith(s)){
+						ok = true;
+						break;
+					}
+			}
+			if (!ok) continue;
+			if (this.typesN.length) {
+				var ok = false;
+				for(var ii = 0, s = null; s = this.typesN[ii]; ii++)
+					if (v.type.startsWith(s)){
+						ok = true;
+						break;
+					}
+			}
+			if (!ok) continue;
+			if (!b[i])
+				b[i] = [];
+			b[i].push(v.column + "/" + v.type);
+			j++;
+		}
+		var a = [];
+		for(var i = 0 , t = null; t = b[i]; i++)
+			a.push(t.join(" "));
+		return a;
 	}
 	
 });
