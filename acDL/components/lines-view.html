@@ -124,12 +124,6 @@
 		<img class="photo" src$="[[cfieldphoto]]"></img>
 	</div>			
 	</template>
-
-	<template is="dom-if" if="[[isHtml(selCol)]]" >
-	<div class="l4">
-		<iron-autogrow-textarea class="html" value="[[cfieldhtml]]"></iron-autogrow-textarea>
-	</div>			
-	</template>
 	
 </template>
 </dom-module>
@@ -142,7 +136,6 @@ Polymer({
 		error : {type:String, value:""},
 		path: {type:String, value:""},
 		
-		zips: {type:Object, value:{}},
 		lines: {type:Array, value:[]},
 		
 		clines: {type:Array, value:[]},
@@ -164,9 +157,8 @@ Polymer({
 	ready: function() {
 		AC.linesview = this;
 	},
-	display : function(path, zips, lines){
+	display : function(path, lines){
 		this.path = path;
-		this.zips = zips;
 		this.lines = lines;
 		this.filterLines();
 	},
@@ -178,9 +170,6 @@ Polymer({
 	},
 	isPhoto : function(selCol){
 		return selCol ? selCol.type.startsWith("PHOTO") : false;
-	},
-	isHtml : function(selCol){
-		return selCol ? selCol.type.startsWith("HTML") : false;
 	},
 	lineClass : function(line, selLine){
 		return line == selLine ? "line selline" : "line";
@@ -250,65 +239,59 @@ Polymer({
 		this.selectLine3();
 	},
 	selectLine3 : function(){
-		var x = this.zips[this.selLine];
-		this.zipName = x;
-		var i = x.lastIndexOf("_");
-		this.$.vline.innerHTML = "Version ligne: " + AC.Util.editDHS(x.substring(i+1, i+18));
-		var zipf = this.path + "/" + x;
-		AC.info("Chargement de " + x);
-		AC.fs.readFile(zipf, function(err, data) {
+		this.lpath = this.path + "/" + this.selLine + "line/";
+		var p = this.lpath + "Versions.json.gz";
+		AC.fs.readFile(p, function(err, data) {
 			if (err)
-				AC.error("Chargement en erreur", zipf + " - " + err.message);
-			else
-				this.unzip(data, zipf);
-		}.bind(this));
-	},
-	unzip : function(data, zipf){
-        this.zip = new AC.jszip(data);
-        var ccols = [];
-        this.entries = [];
-        for (var e in this.zip.files) this.entries.push(e);
-        this.entries.sort();
-        var tot = this.entries.length;
-        for (var nb = 0, e = ""; e = this.entries[nb]; nb++) {
-			var i = e.lastIndexOf("_");
-			var col = e.substring(0, i);
-			var j = e.lastIndexOf(".");
-			var type = e.substring(i + 1, j);
-			var ext = type != "HTML" ? e.substring(j + 1) : "html";
-			var t = type == "PHOTO" ? type + "/" + ext : type;
-			ccols.push({col:col, type:t , entry:e, ext:ext});
-		};
-		if (ccols.length > 1)
-			ccols.sort(function(a,b){
-				return a.col < b.col ? -1 : (a.col > b.col ? 1 : 0);
-			});
-		this.ccols = ccols;
-		if (this.ccols.length > 0)
-			this.selCol =  this.ccols[0];
-		this.selectCol2();		
-	},
-	getData : function(sc){
-		AC.info("Unzip de " + this.zipName, sc.entry);
-		var buf = this.zip.file(sc.entry).asArrayBuffer();
-		var data = new Uint8Array(buf);
-		if (!sc.type.startsWith("PHOTO")){
-			data = AC.decoder.decode(data);
-			if (sc.type != "HTML"){
+				AC.error("Chargement en erreur de ", p + " : " + err.message);
+			else {
+				var text = AC.decoder.decode(pako.inflate(data));
 				try {
-					data = JSON.parse(data);
-				} catch(e){
-	       			AC.error("Unzip de " + this.zipName + ". Syntaxe JSON", e.message);
+					var vv = JSON.parse(text).Version;
+					var cversions = {};
+					var vx = 0;
+					for(var i = 0, x = null; x = vv[i]; i++){
+						if (x.version > vx) vx = x.version;
+						cversions[x.column + "_" + x.type] = x.version;
+					}
+					this.$.vline.innerHTML = "Version ligne: " + new Date(vx).stdFormat();		
+					var p = this.lpath + "batches.json";
+					AC.fs.readFile(p, "utf-8", function(err, data) {
+						if (err)
+							AC.error("Chargement en erreur de ", p + " : " + err.message);
+						else {
+							try {
+								var ccols = [];
+								this.accols = {};
+								var bb = JSON.parse(data);
+								for(var i = 0, x = null; x = bb[i]; i++){
+									var cols = x.split(" ");
+									for(var j = 0, cx = null; cx = cols[j]; j++) {
+										var k = cx.lastIndexOf("/");
+										var col = cx.substring(0,k);
+										var type = cx.substring(k + 1);
+										var ct = col + "_" + type;
+										var y = {ct:ct, col:col, type:type, batch:i, version:cversions[ct]};
+										this.accols[ct] = y;
+										ccols.push(y);
+									}
+								}
+						        this.ccols = ccols;
+						        this.selCol = ccols.length ? ccols[0] : null;
+						        this.selectCol2();
+							} catch (e){
+								this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
+								return;
+							}
+						}
+					}.bind(this));
+				} catch (e){
+					this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
 					return;
 				}
 			}
-		} else {
-			var p = "data:image/" + sc.ext + ";base64,";
-			var b64 = AC.Base64.encode(data);
-			data = p + b64;
-		}
-		return data;
-	},
+		}.bind(this));
+	},	
 	selectCol : function(e){
 		this.selCol = e.model.__data__.col;
 		this.selectCol2();
@@ -326,18 +309,56 @@ Polymer({
 		this.selectCol3();
 	},
 	selectCol3 : function(){
-		if (this.selCol && !this.selCol.data)
-			this.selCol.data = this.getData(this.selCol);
-		if (this.isHtml(this.selCol)){
-			this.cfieldhtml = this.selCol.data;
-			AC.info("OK : " + this.selCol.col + "/" + this.selCol.type);
-			return;
-		}
-		if (!this.selCol || this.isPhoto(this.selCol)) {
-			this.cfieldphoto = this.selCol.data;
-			AC.info("OK : " + this.selCol.col + "/" + this.selCol.type);
-			return;
-		}
+		var sc = this.selCol;
+		this.$.vcell.innerHTML = "Version cell : " + new Date(sc.version).stdFormat();		
+		var p = this.lpath + "B" + this.selCol.batch + ".zip";
+		AC.fs.readFile(p, function(err, data) {
+			if (err)
+				AC.error("Lecture impossible de ", p + " : " + err.message);
+			else {
+				var zip = new AC.jszip(data);
+				var entry = null;
+		        for (var e in zip.files) {
+					var i = e.lastIndexOf("_");
+					var col = e.substring(0, i);
+					var j = e.lastIndexOf(".");
+					var type = e.substring(i + 1, j);
+					if (type == "HTML") continue;
+					var ct = col + "_" + type;
+					var ext = e.substring(j + 1);
+					var cc = this.accols[ct];
+					sc.ext = ext;
+					cc.ext = ext;
+					if (ct == sc.ct)
+						entry = e;
+				};
+				AC.info("Unzip de " + p + ":" + entry);
+				try {
+					var buf = zip.file(entry).asArrayBuffer();
+					var zdata = new Uint8Array(buf);
+					if (sc.type != "PHOTO"){
+						zdata = AC.decoder.decode(zdata);
+						try {
+							sc.data = JSON.parse(zdata);
+							this.selectCol4();
+						} catch(e){
+			       			AC.error("Syntaxe JSON de " + p + ":" + entry + " : ", e.message);
+							return;
+						}
+					} else {
+						this.cfieldphoto = "data:image/" + sc.ext + ";base64," + AC.Base64.encode(zdata);
+						AC.info("OK : " + sc.col + "/" + sc.type);
+						return;
+					}
+				} catch (e) {
+	       			AC.error("Unzip en erreur de " + p + ":" + entry + " : ", e.message);
+					return;					
+				}
+			}
+		}.bind(this));
+	},
+	
+	selectCol4 : function() {
 		AC.info("Analyse des items de " + this.selCol.col + "/" + this.selCol.type);
 		var rt = [];
 		for(var t in this.selCol.data) {

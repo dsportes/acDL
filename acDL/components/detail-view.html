@@ -113,10 +113,8 @@ Polymer({
 		filtre: {type:Object, value:{}},
 		path: {type:String, value:""},
 		
-		zips: {type:Object, value:{}},
 		docs: {type:Array, value:[]},
 		lines: {type:Array, value:[]},
-		nbZipFiles: {type:Number, value:0},
 		nbl: {type:Number, value:0},
 		error: {type:String, value:""},
 		
@@ -138,7 +136,7 @@ Polymer({
 	},
 	voirdonnees : function() { 
 		this.donnees = true;
-		AC.linesview.display(this.path, this.zips, this.lines);
+		AC.linesview.display(this.path, this.lines);
 	},
 	voirdocuments : function() { 
 		this.donnees = false;
@@ -160,54 +158,36 @@ Polymer({
 		this.docs = [];
 		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
 			if (err)
-				this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
+				this.onError("Lecture impossible de " + this.path + " : " + err.message);
 			else {
 				try {
 					this.filtre = JSON.parse(data);
 				} catch (e) {
-					this.onError("Erreur de syntaxe dans " + self.path + "/filtre.json impossible. " + err.message);
+					this.onError("Erreur de syntaxe dans " + self.path + "/filtre.json  : " + err.message);
 					return;
 				}
-				AC.fs.readdir(this.path, function(err, files){
-					if (!err && files && files.length != 0) {
-						this.nbZipFiles = 0;
-						files.forEach(function(zip){
-							if (zip.endsWith(".zip")){
-								this.nbZipFiles++;
-								var i = zip.indexOf("_");
-								this.zips[zip.substring(0, i)] = zip;
-							}
-						}.bind(this));
-					};
-					AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+				AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+					if (err)
+						this.onError("Lecture impossible de " + this.path + " : " + err.message);
+					else {
+						try {
+							this.docs = JSON.parse(data);
+						} catch (e) {
+							this.onError("Erreur de syntaxe dans " + this.path + "/docs.json : " + err.message);	
+						}
+					}
+					AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
 						if (err)
-							this.onError("Lecture de " + this.path + "/docs.json impossible. " + err.message);
+							this.onError("Lecture impossible de " + this.path + "/lignes : " + err.message);
 						else {
 							try {
-								this.docs = JSON.parse(data);
+								this.lines = JSON.parse(data);
+								this.initView();
 							} catch (e) {
-								this.onError("Erreur de syntaxe dans " + this.path 
-										+ "/docs.json. " + err.message);	
+								this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json. " + err.message);
+								return;
 							}
 						}
-						AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
-							if (err)
-								this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
-							else {
-								try {
-									this.lines = JSON.parse(data);
-								} catch (e) {
-									this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json. " + err.message);
-									return;
-								}
-								this.nbl = this.lines.length;
-								if (this.nbl != this.nbZipFiles)
-									this.onError("" + this.nbl + " lignes : " + this.nbZipFiles + " trouvés");
-								else {
-									this.initView();
-								}
-							}
-						}.bind(this));
 					}.bind(this));
 				}.bind(this));
 			};

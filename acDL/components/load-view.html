@@ -93,15 +93,17 @@ Polymer({
 		cd: {type:Number, value:0},
 		vd: {type:Number, value:0},
 		nbd: {type:Number, value:0},
+		batch : {type:Number, value:-1},
 
 		cells: {type:Number, value:0},
 		nodes: {type:Number, value:0},
 		mimes: {type:Number, value:0},
 
 		lines : {type:Array, value:[]},
-		zips : {type:Object, value:{}},
+//		zips : {type:Object, value:{}},
 		docs : {type:Array, value:[]},
-		nbZipFiles : {type:Number, value:0},
+		batches : {type:Array, value:[]},
+//		nbZipFiles : {type:Number, value:0},
 
 		filtreSrc : {type:Object, value:{}},
 		urlDest : {type:String, value:""}
@@ -142,20 +144,20 @@ Polymer({
 		this.name = AC.desktop.currentdump;
 		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
 		this.path = dp + this.name;
-		this.zips = {};
-		var self = this;
-		AC.fs.readdir(this.path, function(err, files){
-			if (!err && files && files.length != 0) {
-				self.nbZipFiles = 0;
-				files.forEach(function(zip){
-					if (zip.endsWith(".zip")){
-						self.nbZipFiles++;
-						var i = zip.indexOf("_");
-						self.zips[zip.substring(0, i)] = zip;
-					}
-				});
-			};
-		});
+// 		this.zips = {};
+// 		var self = this;
+// 		AC.fs.readdir(this.path, function(err, files){
+// 			if (!err && files && files.length != 0) {
+// 				self.nbZipFiles = 0;
+// 				files.forEach(function(zip){
+// 					if (zip.endsWith(".zip")){
+// 						self.nbZipFiles++;
+// 						var i = zip.indexOf("_");
+// 						self.zips[zip.substring(0, i)] = zip;
+// 					}
+// 				});
+// 			};
+// 		});
 	},
 	
 	versdesktop : function(e){
@@ -276,7 +278,11 @@ Polymer({
 			this.cells += stats.cells ? stats.cells : 0;
 			this.mimes += stats.mimes ? stats.mimes : 0;
 			this.nodes += stats.nodes ? stats.nodes : 0;
-			this.cl++;
+			this.batch ++;
+			if (this.batch == this.batches.length) {
+				this.batch = -1;
+				this.cl++;
+			}
 			if (this.nbl == this.cl)
 				this.status = 3;
 			this.enPause();
@@ -305,57 +311,77 @@ Polymer({
 			AC.info(this.phase);
 			AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
 				if (err)
-					self.onError("Lecture de " + self.path + "/lignes.json impossible. " + err.message);
+					this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
 				else {
 					try {
-						self.lines = JSON.parse(data);
+						this.lines = JSON.parse(data);
 					} catch (e) {
-						self.onError("Erreur de syntaxe dans " + self.path + "/lignes.json impossible. " + err.message);
+						this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json impossible. " + err.message);
 						return;
 					}
-					self.nbl = self.lines.length;
-					if (self.nbl != self.nbZipFiles)
-						self.onError("" + self.nbl + " lignes : " + self.nbZipFiles + " trouvés");
-					else {
-						self.status = 2;
-						self.enPause();
-						self.working();
-					}
+					this.nbl = this.lines.length;
+					this.status = this.nbl ? 2 : 3;
+					this.batch = -1;
+					this.cl = 0;
+					this.enPause();
+					this.working();
 				}
-			});
+			}.bind(this));
 			return;
 		}
 		case 2 : {
-			this.phase = "Restauration des lignes de cellules";
-			AC.progress(this.phase, null, this.cl, this.nbl);
-			var line = this.lines[this.cl];
-			var fn = this.zips[line];
-			if (!fn)
-				this.onError("Fichier .zip pour la ligne " + line + " introuvable");
-			else
-				this.srv.load(line, this.path + "/" + fn);
+			if (this.batch == -1){
+				var b = this.path + "/" + this.lines[this.cl] + "line/batches.json"
+				AC.fs.readFile(b, 'utf-8', function(err, data) {
+					if (err)
+						this.onError("Lecture impossible de " + b + " : " + err.message);
+					else {
+						try {
+							this.batches = JSON.parse(data);
+						} catch (e) {
+							this.onError("Erreur de syntaxe dans " + b + " : " + err.message);
+							return;
+						}
+						if (this.batches.length == 0) {
+							this.cl++;
+							if (this.cl == this.nbl)
+								this.status = 3;
+						} else
+							this.batch = 0;
+						this.enPause();
+						this.working();
+						return;
+					}
+				}.bind(this));
+				return;
+			}
+			var l = this.lines[this.cl];
+			this.phase = "Chargement des cellules de la ligne " + l + " - lot : " + this.batch;
+			AC.progress(this.phase, "", this.cl + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
+			var z = this.path + "/" + l + "line/B" + this.batch + ".zip";
+			this.srv.load(l, z, this.batch == 0);
 			return;
 		}
 		case 3 : {
 			this.phase = "Lecture du fichier docs.json";
 			AC.info(this.phase);
-			AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+			var p = this.path + "/docs.json";
+			AC.fs.readFile(p, 'utf-8', function(err, data) {
 				if (err)
-					self.onError("Lecture de " + this.path + "/docs.json impossible. " + err.message);
+					this.onError("Lecture impossible de " + p + " : " + err.message);
 				else {
 					try {
-						self.docs = JSON.parse(data);
+						this.docs = JSON.parse(data);
 					} catch (e) {
-						self.onError("Erreur de syntaxe dans " + self.path 
-								+ "/docs.json impossible. " + err.message);	
+						this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
 						return;
 					}
-					self.nbd = self.docs.length;
-					self.status = 4;
-					self.enPause();
-					self.working();
+					this.nbd = this.docs.length;
+					this.status = 4;
+					this.enPause();
+					this.working();
 				}
-			});
+			}.bind(this));
 			return;
 		}
 		case 4 : {
@@ -376,7 +402,7 @@ Polymer({
 				try {
 					stats = AC.fs.statSync(fn);
 				} catch(e){
-					self.onError("Fichier " + fn + " (ou .gz) non trouvé");
+					this.onError("Fichier " + fn + " (ou .gz) non trouvé");
 					return;
 				}
 			}

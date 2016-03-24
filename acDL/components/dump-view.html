@@ -278,7 +278,7 @@ Polymer({
 			this.nbd = this.docs.length;
 			AC.fs.writeFile(this.srv.dirName + "docs.json", text, function(err) {
 				if (err) {
-					self.onError("Impossible d'écrire docs.json dans " + this.srv.dirName + "\n" + err.message);
+					this.onError("Impossible d'écrire docs.json dans " + this.srv.dirName + "\n" + err.message);
 					return;
 				}
 				this.status = this.nbd ? 5 : 6;
@@ -323,17 +323,25 @@ Polymer({
 				var p = this.srv.dirName + this.lines[this.cl] + "line/Versions.json.gz";
 				AC.fs.readFile(p, null, function(err, data) {
 					if (err)
-						this.onError("Lecture de " + p + " impossible. " + err.message);
+						this.onError("Lecture de impossible de " + p + " : " + err.message);
 					else {
 						try {
 							var d2 = AC.decoder.decode(pako.inflate(data));
 							var versions = JSON.parse(d2);
 							this.batches = this.buildBatches(versions);
 							if (this.batches.length) {
-								this.batch = 0;
-								this.status = 3;
-								this.enPause();
-								this.working();
+								var b = this.srv.dirName + this.lines[this.cl] + "line/batches.json";
+								var text = JSON.stringify(this.batches);
+								AC.fs.writeFile(b, text, function(err){
+									if (err) {
+										this.onError("Impossible d'écrire " + b + " : " + err.message);
+										return;
+									}
+									this.batch = 0;
+									this.status = 3;
+									this.enPause();
+									this.working();
+								}.bind(this));
 								return;
 							} else {
 								this.batch = -1;
@@ -345,7 +353,7 @@ Polymer({
 								return;
 							}
 						} catch (e) {
-							this.onError("Erreur de syntaxe dans " + p + ". " + err.message);	
+							this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
 						}
 					}
 				}.bind(this));
@@ -353,7 +361,7 @@ Polymer({
 			}
 			var l = this.lines[this.cl];
 			this.phase = "Réception des cellules de la ligne " + l + " - lot : " + this.batch;
-			AC.progress(this.phase, "", this.cl + (this.batch / 1000), this.nbl);
+			AC.progress(this.phase, "", this.cl + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
 			this.srv.dumpC(this.lines[this.cl], this.batches[this.batch], this.batch);
 			return;
 		}
@@ -380,7 +388,7 @@ Polymer({
 				var p1 = this.name;
 				if (err) {
 					this.onError("Impossible de renommer le directory " + p1 +
-							" dans " + AC.desktop.dirpath + "\nExplorer ouvert dessus ?\n" 
+							" dans " + AC.desktop.dirpath + ". Explorer ouvert dessus ? " 
 							+ err.message);
 				} else {
 					this.name = p1.substring(0, p1.length - 1) + (this.partiel ? "P" : "C");
@@ -391,7 +399,7 @@ Polymer({
 			return;
 		}
 		case 9 : {
-			this.phase = "Dump terminé avec succès, directory renommé !";
+			this.phase = "Dump terminé avec succès, directory renommé.";
 			AC.info(this.phase);
 		}
 		}
