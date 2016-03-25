@@ -2,6 +2,7 @@
 <link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../bower_components/iron-autogrow-textarea/iron-autogrow-textarea.html">
+<link rel="import" href="../bower_components/iron-icons/av-icons.html">
 
 <link rel="import" href="fwk-styles.html">
 
@@ -45,17 +46,23 @@
     :host .l3 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--layout-horizontal); @apply(--paper-font-body1);}
     :host .l4 {width:100%; @apply(--layout-flex); flex-grow:2; @apply(--paper-font-body1); 
     	padding:5px 0; overflow-y:auto;}
-    :host .l3a {width:40%; border-right:2px solid var(--paper-blue-grey-100);}
+    :host .l3a {width:40%; border-right:2px solid var(--paper-blue-grey-100); @apply(--layout-vertical);}
     :host .photo {overflow:auto;}
     :host .l3b {@apply(--layout-flex); @apply(--layout-vertical);}
     :host .l3b1 {height:100px; margin:0; padding:0;}
     :host .l3b2 {@apply(--layout-flex); }
-    :host .recordIndex { width:30px; text-align:right; height:18px; overflow:hidden; display:inline-block;}
-    :host .fieldValue1 { height:18px; overflow:hidden; margin-left: 10px; display:inline-block;}
+    :host .recordIndex { width:30px; float:left; text-align:right; margin-right:10px; }
+    :host .fieldValue1 { }
     :host .fieldName { width:30%; text-align:right; height:20px; overflow:hidden; display:inline-block; font-style:italic; font-weight:bold;}
     :host .fieldValue2 { height:20px; overflow:hidden; margin-left: 10px; width:65%; display:inline-block;}
     :host .fieldName2 { width:50%; text-align:right; height:20px; overflow:hidden; display:inline-block; font-style:italic; font-weight:bold;}
     :host .fieldValue3 { height:20px; overflow:hidden; margin-left: 10px; display:inline-block;}
+    
+    :host .pagebtns { height:20px; text-align:center; }
+    :host .iconbtn { color:var(--paper-blue-grey-700); position: relative; display: inline-block; 
+    	cursor:pointer; margin:0 3px; }
+   	:host.iconbtn:hover { -webkit-transform: scale(1.4); transform: scale(1.4); }
+   	:host .iconbtn > paper-ripple { overflow: hidden; color: white; }
     
 </style>
 	<div class="l1">
@@ -94,12 +101,34 @@
 	<div class="l3">
 		<div class="l3a">
 			<template is="dom-if" if="[[!isPhoto(selCol)]]" >		
-			<template is="dom-repeat" items="[[crecords]]" as="record">
+			<template is="dom-if" if="[[lastpage]]" >
+				<div class="pagebtns">
+					<div class$="[[iconfr(ipage,lastpage)]]" on-tap="fastRewind">
+		      			<iron-icon icon="av:fast-rewind"></iron-icon>
+		      			<paper-ripple class="circle" recenters></paper-ripple>
+	    			</div>
+					<div class$="[[iconsn(ipage,lastpage)]]" on-tap="skipNext">
+		      			<iron-icon icon="av:skip-next"></iron-icon>
+		      			<paper-ripple class="circle" recenters></paper-ripple>
+	    			</div>
+					<div class$="[[iconsp(ipage,lastpage)]]" on-tap="skipPrevious">
+		      			<iron-icon icon="av:skip-previous"></iron-icon>
+		      			<paper-ripple class="circle" recenters></paper-ripple>
+	    			</div>
+					<div class$="[[iconff(ipage,lastpage)]]" on-tap="fastForward">
+		      			<iron-icon icon="av:fast-forward"></iron-icon>
+		      			<paper-ripple class="circle" recenters></paper-ripple>
+	    			</div>				
+				</div>
+			</template>
+			<div class="l3b2">
+			<template is="dom-repeat" items="[[disprecords]]" as="record">
 				<div class$="[[recordClass(record,selRecord)]]" on-tap="selectRecord">
 					<div class="recordIndex">[[record.__index]]</div>
 					<div class="fieldValue1">[[editField(record,selField)]]</div>
 				</div>
 			</template>
+			</div>
 			</template>
 		</div>
 		
@@ -133,6 +162,9 @@
 Polymer({
 	is : "lines-view",
 	properties : {
+		mxd : {type:Number, value:20},
+		ipage : {type:Number, value:0},
+		lastpage : {type:Number, value:0},
 		error : {type:String, value:""},
 		path: {type:String, value:""},
 		
@@ -144,6 +176,7 @@ Polymer({
 		crecordtypes: {type:Array, value:[]},
 		cfields: {type:Array, value:[]},
 		crecords: {type:Array, value:[]},
+		disprecords: {type:Array, value:[]},
 		cfieldvalue: {type:String, value:""},
 		
 		selLine: {type:String, value:""},
@@ -161,6 +194,53 @@ Polymer({
 		this.path = path;
 		this.lines = lines;
 		this.filterLines();
+	},
+	iconfr : function(ipage,lastpage){
+		return ipage != 0 ? "iconbtn" : "iconbtn disabled";
+	},
+	iconsn : function(ipage,lastpage){
+		return lastpage != 1 && ipage != lastpage ? "iconbtn" : "iconbtn disabled";
+	},
+	iconsp : function(ipage,lastpage){
+		return lastpage != 1 && ipage != 0 ? "iconbtn" : "iconbtn disabled";
+	},
+	iconff : function(ipage,lastpage){
+		return ipage != lastpage ? "iconbtn" : "iconbtn disabled";
+	},
+	fastRewind : function(){
+		this.setDisp(0, true);
+	},
+	fastForward : function(){
+		this.setDisp(this.lastpage, true);
+	},
+	skipNext : function(){
+		this.setDisp(this.ipage + 1, true);
+	},
+	skipPrevious : function(){
+		this.setDisp(this.ipage - 1, true);
+	},
+	setDisp : function(p, setSelRecord){
+		var nd = [];
+		var s = p * this.mxd;
+		for(var i = 0, r = null; (r = this.crecords[i + s]) && i < this.mxd; i++) nd.push(r);
+		this.disprecords = nd;
+		this.ipage = p;
+		this.lastpage = Math.floor(this.crecords.length / this.mxd);
+		AC.progress("OK : " + this.selCol.col + "/" + this.selCol.type + "/" + this.selField, "", 
+				(this.ipage + 1), (this.lastpage + 1));
+		if (setSelRecord) {
+			this.selRecord = nd[0];
+			this.setField();
+		}
+	},
+	setField : function(){
+		var val = "";
+		if (this.selField && !this.selField.startsWith("_")) {
+			var vx = this.selRecord[this.selField];
+			if (typeof vx != "undefined")
+				val = vx;
+		}
+		this.cfieldvalue = val;		
 	},
 	onError : function(err){
 		this.error = err;
@@ -243,7 +323,7 @@ Polymer({
 		var p = this.lpath + "Versions.json.gz";
 		AC.fs.readFile(p, function(err, data) {
 			if (err)
-				AC.error("Chargement en erreur de ", p + " : " + err.message);
+				AC.error("Chargement en erreur de " + p + " : " + err.message);
 			else {
 				var text = AC.decoder.decode(pako.inflate(data));
 				try {
@@ -258,7 +338,7 @@ Polymer({
 					var p = this.lpath + "batches.json";
 					AC.fs.readFile(p, "utf-8", function(err, data) {
 						if (err)
-							AC.error("Chargement en erreur de ", p + " : " + err.message);
+							AC.error("Chargement en erreur de " + p + " : " + err.message);
 						else {
 							try {
 								var ccols = [];
@@ -266,12 +346,15 @@ Polymer({
 								var bb = JSON.parse(data);
 								for(var i = 0, x = null; x = bb[i]; i++){
 									var cols = x.split(" ");
-									for(var j = 0, cx = null; cx = cols[j]; j++) {
-										var k = cx.lastIndexOf("/");
-										var col = cx.substring(0,k);
-										var type = cx.substring(k + 1);
+									for(var j = 0, e = null; e = cols[j]; j++) {
+										var ix = e.lastIndexOf("_");
+										var col = e.substring(0, ix);
+										var jx = e.lastIndexOf(".");
+										var type = e.substring(ix + 1, jx);
+										if (type == "HTML") continue;
 										var ct = col + "_" + type;
-										var y = {ct:ct, col:col, type:type, batch:i, version:cversions[ct]};
+										var ext = e.substring(jx + 1);
+										var y = {ct:ct, col:col, type:type, batch:i, version:cversions[ct], ext:ext, entry:e};
 										this.accols[ct] = y;
 										ccols.push(y);
 									}
@@ -314,27 +397,12 @@ Polymer({
 		var p = this.lpath + "B" + this.selCol.batch + ".zip";
 		AC.fs.readFile(p, function(err, data) {
 			if (err)
-				AC.error("Lecture impossible de ", p + " : " + err.message);
+				AC.error("Lecture impossible de " + p + " : " + err.message);
 			else {
 				var zip = new AC.jszip(data);
-				var entry = null;
-		        for (var e in zip.files) {
-					var i = e.lastIndexOf("_");
-					var col = e.substring(0, i);
-					var j = e.lastIndexOf(".");
-					var type = e.substring(i + 1, j);
-					if (type == "HTML") continue;
-					var ct = col + "_" + type;
-					var ext = e.substring(j + 1);
-					var cc = this.accols[ct];
-					sc.ext = ext;
-					cc.ext = ext;
-					if (ct == sc.ct)
-						entry = e;
-				};
-				AC.info("Unzip de " + p + ":" + entry);
+				AC.info("Unzip de " + p + ":" + sc.entry);
 				try {
-					var buf = zip.file(entry).asArrayBuffer();
+					var buf = zip.file(sc.entry).asArrayBuffer();
 					var zdata = new Uint8Array(buf);
 					if (sc.type != "PHOTO"){
 						zdata = AC.decoder.decode(zdata);
@@ -427,40 +495,47 @@ Polymer({
 		this.selField = ff[1];
 		if (v)
 			this.$.vcell.innerHTML = "Version cell&nbsp;&nbsp;: " + new Date(v).stdFormat();
-		if (crecords.length > 0)
-			this.selRecord = crecords[0];
-		this.sortRecords(crecords, null);
+		this.sortRecords(crecords, false);
 	},
 	selectRecord : function(e){
 		this.selRecord = e.model.__data__.record;
+		this.setField();
 	},
 	selectField : function(e){
 		this.selField = e.model.__data__.field;
 		var rx = [];
 		for(var i = 0, r = null; r = this.crecords[i]; i++) rx.push(r);
-		this.sortRecords(rx, this.selRecord);
+		this.sortRecords(rx, true);
 	},
-	sortRecords : function(crecords, selRecord){
+	sortRecords : function(crecords, hasSelRecord){
 		AC.info("Edition des records de " + this.selCol.col + "/" + 
 				this.selCol.type + "/" + this.selField);
+		var np = 0;
 		if (crecords.length > 1) {
 			for(var i = 0, r = null; r = crecords[i]; i++)
 				r.ZZ = this.editField(r, this.selField);
-			crecords.sort(function(a,b){
-				return a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 0);
-			});
+			if (!hasSelRecord) {
+				crecords.sort(function(a,b){
+					return a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
+						(a.__index > b.__index ? 1 : (a.__index < b.__index ? -1 : 0)));
+				});
+			} else {
+				var isel = this.selRecord.__index;
+				crecords.sort(function(a,b){
+					return a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
+						(a.__index > b.__index || a.__index == isel ? 1 : 
+							(a.__index < b.__index || b.__index == isel ? -1 : 0)));
+				});
+				for(var i = 0, r = null; r = crecords[i]; i++)
+					if (r.__index == isel){
+						np = Math.floor(i / this.mxd);
+						break;
+					}
+			}
 		}
 		this.crecords = crecords;
-		if (!selRecord)
-			this.selRecord = crecords.length ? crecords[0] : null;
-		var val = "";
-		if (this.selField && !this.selField.startsWith("_") && this.selRecord) {
-			var vx = this.selRecord[this.selField];
-			if (typeof vx != "undefined")
-				val = vx;
-		}
-		this.cfieldvalue = val;
-		AC.info("OK : " + this.selCol.col + "/" + this.selCol.type + "/" + this.selField);
+		this.setDisp(np, !hasSelRecord);
+		// AC.info("OK : " + this.selCol.col + "/" + this.selCol.type + "/" + this.selField);
 	},
 	editField : function(r, f){
 		if (!r || !f) return "";

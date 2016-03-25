@@ -174,9 +174,10 @@ Polymer({
 		f.url = AC.desktop.url(this.ptd);
 		var x = JSON.stringify(f);
 		var self = this;
-		AC.fs.writeFile(this.srv.dirName + "filtre.json", x, (err) => {
+		var p = this.srv.dirName + "filtre.json";
+		AC.fs.writeFile(p, x, (err) => {
 			if (err)
-				self.onError("Impossible d'écrire filtre.json dans " + this.srv.dirName + "\n" + err.message);
+				self.onError("Ecriture impossible de " + p + " : " + err.message);
 		});
 		this.working();
 	},
@@ -207,6 +208,9 @@ Polymer({
 			this.pause = 2;
 		}	
 	},
+	
+	updateBatch : function(){
+	},
 
 	onError : function(err){
 		AC.error(err);
@@ -219,14 +223,15 @@ Polymer({
 			try {
 				this.lines = JSON.parse(text);
 			} catch (e){
-				this.onError("Erreur de syntaxe dans lignes.json\n" + e.message);	
+				this.onError("Erreur de syntaxe dans lignes.json : " + e.message);	
 				return;
 			}
 			this.nbl = this.lines.length;
 			this.cl = 0;
-			AC.fs.writeFile(this.srv.dirName + "lignes.json", text, function(err){
+			var p = this.srv.dirName + "lignes.json";
+			AC.fs.writeFile(p, text, function(err){
 				if (err) {
-					this.onError("Impossible d'écrire lignes.json dans " + this.srv.dirName + "\n" + err.message);
+					this.onError("Ecriture impossible de " + p + " : " + err.message);
 					return;
 				}
 				for(var i = 0, l = null; l = this.lines[i]; i++) {
@@ -234,7 +239,7 @@ Polymer({
 					try {
 						AC.fs.mkdirSync(d);
 					} catch(e) {
-						this.onError("Impossible de créet le directory " + d + "\n" + err.message);
+						this.onError("Impossible de créer le directory " + d + " : " + err.message);
 					}
 				}
 				this.status = this.nbl ? 2 : 4;
@@ -257,28 +262,53 @@ Polymer({
 		}
 		case 3 : {
 			this.vc += text;
-			this.batch++;
-			if (this.batch == this.batches.length){
-				this.cl++;
-				this.batch = -1;
-				if (this.nbl == this.cl)
-					this.status = 4;
-			}
-			this.enPause();
-			this.working();
+			var line = this.lines[this.cl];
+			var p = this.srv.dirName + "/" + line + "line/B" + this.batch + ".zip";
+			AC.fs.readFile(p, function(err, data) {
+				if (err)
+					AC.error("Lecture impossible de " + p + " : " + err.message);
+				else {
+					var zip = new AC.jszip(data);
+					var ee = []
+			        for (var e in zip.files)
+			        	ee.push(e);
+				}
+				this.batches[this.batch] = ee.length ? ee.join(" ") : "";
+				this.batch++;
+				if (this.batch == this.batches.length){
+					var p = this.srv.dirName + "/" + line + "line/batches.json";
+					var text = JSON.stringify(this.batches);
+					AC.fs.writeFile(p, text, function(err){
+						if (err) {
+							this.onError("Ecriture impossible de " + p + " : " + err.message);
+							return;
+						} else {}
+							this.cl++;
+							this.batch = -1;
+							if (this.nbl == this.cl)
+								this.status = 4;
+							this.enPause();
+							this.working();
+					}.bind(this));
+				} else {
+					this.enPause();
+					this.working();
+				}
+			}.bind(this));
 			return;
 		}
 		case 4 : {
 			try {
 				this.docs = JSON.parse(text);
 			} catch (e){
-				this.onError("Erreur de syntaxe dans docs.json\n" + e.message);	
+				this.onError("Erreur de syntaxe dans docs.json : " + e.message);	
 				return;
 			}
 			this.nbd = this.docs.length;
-			AC.fs.writeFile(this.srv.dirName + "docs.json", text, function(err) {
+			var p = this.srv.dirName + "docs.json";
+			AC.fs.writeFile(p, text, function(err) {
 				if (err) {
-					this.onError("Impossible d'écrire docs.json dans " + this.srv.dirName + "\n" + err.message);
+					this.onError("Ecriture impossible de " + p + " : " + err.message);
 					return;
 				}
 				this.status = this.nbd ? 5 : 6;
@@ -327,8 +357,8 @@ Polymer({
 					else {
 						try {
 							var d2 = AC.decoder.decode(pako.inflate(data));
-							var versions = JSON.parse(d2);
-							this.batches = this.buildBatches(versions);
+							this.versions = JSON.parse(d2);
+							this.batches = this.buildBatches(this.versions);
 							if (this.batches.length) {
 								var b = this.srv.dirName + this.lines[this.cl] + "line/batches.json";
 								var text = JSON.stringify(this.batches);
@@ -360,8 +390,8 @@ Polymer({
 				return;
 			}
 			var l = this.lines[this.cl];
-			this.phase = "Réception des cellules de la ligne " + l + " - lot : " + this.batch;
-			AC.progress(this.phase, "", this.cl + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
+			this.phase = "Réception des cellules de la ligne " + l + " - lot : " + (this.batch + 1);
+			AC.progress(this.phase, "", (this.cl + 1) + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
 			this.srv.dumpC(this.lines[this.cl], this.batches[this.batch], this.batch);
 			return;
 		}

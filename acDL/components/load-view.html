@@ -144,20 +144,6 @@ Polymer({
 		this.name = AC.desktop.currentdump;
 		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
 		this.path = dp + this.name;
-// 		this.zips = {};
-// 		var self = this;
-// 		AC.fs.readdir(this.path, function(err, files){
-// 			if (!err && files && files.length != 0) {
-// 				self.nbZipFiles = 0;
-// 				files.forEach(function(zip){
-// 					if (zip.endsWith(".zip")){
-// 						self.nbZipFiles++;
-// 						var i = zip.indexOf("_");
-// 						self.zips[zip.substring(0, i)] = zip;
-// 					}
-// 				});
-// 			};
-// 		});
 	},
 	
 	versdesktop : function(e){
@@ -268,16 +254,18 @@ Polymer({
 		var self = this;
 		switch (this.status){
 		case 2 : {
-			try {
-				var stats = JSON.parse(text);
-			} catch(e){
-				this.onError("Retour de restauration d'une ligne : syntaxe incorrecte");
-				return;
+			if (text){
+				try {
+					var stats = JSON.parse(text);
+				} catch(e){
+					this.onError("Retour de restauration d'une ligne : syntaxe incorrecte");
+					return;
+				}
+				this.vc += stats.bytes ? stats.bytes : 0;
+				this.cells += stats.cells ? stats.cells : 0;
+				this.mimes += stats.mimes ? stats.mimes : 0;
+				this.nodes += stats.nodes ? stats.nodes : 0;
 			}
-			this.vc += stats.bytes ? stats.bytes : 0;
-			this.cells += stats.cells ? stats.cells : 0;
-			this.mimes += stats.mimes ? stats.mimes : 0;
-			this.nodes += stats.nodes ? stats.nodes : 0;
 			this.batch ++;
 			if (this.batch == this.batches.length) {
 				this.batch = -1;
@@ -356,10 +344,15 @@ Polymer({
 				return;
 			}
 			var l = this.lines[this.cl];
-			this.phase = "Chargement des cellules de la ligne " + l + " - lot : " + this.batch;
-			AC.progress(this.phase, "", this.cl + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
-			var z = this.path + "/" + l + "line/B" + this.batch + ".zip";
-			this.srv.load(l, z, this.batch == 0);
+			var bx = this.batches[this.batch];
+			if (bx) {
+				this.phase = "Chargement des cellules de la ligne " + l + " - lot : " + (this.batch + 1);
+				AC.progress(this.phase, "", (this.cl + 1) + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
+				var z = this.path + "/" + l + "line/B" + this.batch + ".zip";
+				this.srv.load(l, z, this.batch == 0);
+			} else {
+				this.onDone(""); // Le lot était vide, aucune cellule n'était présente
+			}
 			return;
 		}
 		case 3 : {
