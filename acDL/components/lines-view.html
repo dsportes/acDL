@@ -158,6 +158,7 @@
 </dom-module>
 
 <script>
+'use strict'
 
 Polymer({
 	is : "lines-view",
@@ -220,9 +221,9 @@ Polymer({
 		this.setDisp(this.ipage - 1, true);
 	},
 	setDisp : function(p, setSelRecord){
-		var nd = [];
-		var s = p * this.mxd;
-		for(var i = 0, r = null; (r = this.crecords[i + s]) && i < this.mxd; i++) nd.push(r);
+		const nd = [];
+		const s = p * this.mxd;
+		for(let i = 0, r = null; (r = this.crecords[i + s]) && i < this.mxd; i++) nd.push(r);
 		this.disprecords = nd;
 		this.ipage = p;
 		this.lastpage = Math.floor(this.crecords.length / this.mxd);
@@ -234,9 +235,9 @@ Polymer({
 		}
 	},
 	setField : function(){
-		var val = "";
+		let val = "";
 		if (this.selField && !this.selField.startsWith("_")) {
-			var vx = this.selRecord[this.selField];
+			const vx = this.selRecord[this.selField];
 			if (typeof vx != "undefined")
 				val = vx;
 		}
@@ -285,8 +286,8 @@ Polymer({
 		this.cfieldphoto = "";
 		
 		if (this.lines) {
-			var cl = [];
-			for(var i = 0, l = null; l = this.lines[i]; i++){
+			const cl = [];
+			for(let i = 0, l = null; l = this.lines[i]; i++){
 				if (l.startsWith(this.source))
 					cl.push(l);
 			}
@@ -320,58 +321,58 @@ Polymer({
 	},
 	selectLine3 : function(){
 		this.lpath = this.path + "/" + this.selLine + "line/";
-		var p = this.lpath + "Versions.json.gz";
+		const p = this.lpath + "Versions.json.gz";
 		AC.fs.readFile(p, function(err, data) {
-			if (err)
+			if (err) {
 				AC.error("Chargement en erreur de " + p + " : " + err.message);
-			else {
-				var text = AC.decoder.decode(pako.inflate(data));
-				try {
-					var vv = JSON.parse(text).Version;
-					var cversions = {};
-					var vx = 0;
-					for(var i = 0, x = null; x = vv[i]; i++){
-						if (x.version > vx) vx = x.version;
-						cversions[x.column + "_" + x.type] = x.version;
+				return;
+			}
+			const text = AC.decoder.decode(pako.inflate(data));
+			try {
+				const vv = JSON.parse(text).Version;
+				const cversions = {};
+				let vx = 0;
+				for(let i = 0, x = null; x = vv[i]; i++){
+					if (x.version > vx) vx = x.version;
+					cversions[x.column + "_" + x.type] = x.version;
+				}
+				this.$.vline.innerHTML = "Version ligne: " + new Date(vx).stdFormat();		
+				const p = this.lpath + "batches.json";
+				AC.fs.readFile(p, "utf-8", function(err, data) {
+					if (err) {
+						AC.error("Chargement en erreur de " + p + " : " + err.message);
+						return;
 					}
-					this.$.vline.innerHTML = "Version ligne: " + new Date(vx).stdFormat();		
-					var p = this.lpath + "batches.json";
-					AC.fs.readFile(p, "utf-8", function(err, data) {
-						if (err)
-							AC.error("Chargement en erreur de " + p + " : " + err.message);
-						else {
-							try {
-								var ccols = [];
-								this.accols = {};
-								var bb = JSON.parse(data);
-								for(var i = 0, x = null; x = bb[i]; i++){
-									var cols = x.split(" ");
-									for(var j = 0, e = null; e = cols[j]; j++) {
-										var ix = e.lastIndexOf("_");
-										var col = e.substring(0, ix);
-										var jx = e.lastIndexOf(".");
-										var type = e.substring(ix + 1, jx);
-										if (type == "HTML") continue;
-										var ct = col + "_" + type;
-										var ext = e.substring(jx + 1);
-										var y = {ct:ct, col:col, type:type, batch:i, version:cversions[ct], ext:ext, entry:e};
-										this.accols[ct] = y;
-										ccols.push(y);
-									}
-								}
-						        this.ccols = ccols;
-						        this.selCol = ccols.length ? ccols[0] : null;
-						        this.selectCol2();
-							} catch (e){
-								this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
-								return;
+					try {
+						const ccols = [];
+						this.accols = {};
+						const bb = JSON.parse(data);
+						for(let i = 0, x = null; x = bb[i]; i++){
+							const cols = x.split(" ");
+							for(let j = 0, e = null; e = cols[j]; j++) {
+								const ix = e.lastIndexOf("_");
+								const col = e.substring(0, ix);
+								const jx = e.lastIndexOf(".");
+								const type = e.substring(ix + 1, jx);
+								if (type == "HTML") continue;
+								const ct = col + "_" + type;
+								const ext = e.substring(jx + 1);
+								const y = {ct:ct, col:col, type:type, batch:i, version:cversions[ct], ext:ext, entry:e};
+								this.accols[ct] = y;
+								ccols.push(y);
 							}
 						}
-					}.bind(this));
-				} catch (e){
-					this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
-					return;
-				}
+				        this.ccols = ccols;
+				        this.selCol = ccols.length ? ccols[0] : null;
+				        this.selectCol2();
+					} catch (e){
+						this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
+						return;
+					}
+				}.bind(this));
+			} catch (e){
+				this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
+				return;
 			}
 		}.bind(this));
 	},	
@@ -392,50 +393,45 @@ Polymer({
 		this.selectCol3();
 	},
 	selectCol3 : function(){
-		var sc = this.selCol;
+		const sc = this.selCol;
 		this.$.vcell.innerHTML = "Version cell : " + new Date(sc.version).stdFormat();		
-		var p = this.lpath + "B" + this.selCol.batch + ".zip";
+		const p = this.lpath + "B" + this.selCol.batch + ".zip";
 		AC.fs.readFile(p, function(err, data) {
-			if (err)
+			if (err) {
 				AC.error("Lecture impossible de " + p + " : " + err.message);
-			else {
-				var zip = new AC.jszip(data);
+				return;
+			}
+			try {
+				const zip = new AC.jszip(data);
 				AC.info("Unzip de " + p + ":" + sc.entry);
-				try {
-					var buf = zip.file(sc.entry).asArrayBuffer();
-					var zdata = new Uint8Array(buf);
-					if (sc.type != "PHOTO"){
-						zdata = AC.decoder.decode(zdata);
-						try {
-							sc.data = JSON.parse(zdata);
-							this.selectCol4();
-						} catch(e){
-			       			AC.error("Syntaxe JSON de " + p + ":" + entry + " : ", e.message);
-							return;
-						}
-					} else {
-						this.cfieldphoto = "data:image/" + sc.ext + ";base64," + AC.Base64.encode(zdata);
-						AC.info("OK : " + sc.col + "/" + sc.type);
-						return;
+				const buf = zip.file(sc.entry).asArrayBuffer();
+				let zdata = new Uint8Array(buf);
+				if (sc.type != "PHOTO"){
+					zdata = AC.decoder.decode(zdata);
+					try {
+						sc.data = JSON.parse(zdata);
+						this.selectCol4();
+					} catch(e){
+		       			AC.error("Syntaxe JSON de " + p + ":" + entry + " : ", e.message);
 					}
-				} catch (e) {
-	       			AC.error("Unzip en erreur de " + p + ":" + entry + " : ", e.message);
-					return;					
-				}
+					return;
+				} 
+				this.cfieldphoto = "data:image/" + sc.ext + ";base64," + AC.Base64.encode(zdata);
+				AC.info("OK : " + sc.col + "/" + sc.type);
+			} catch (e) {
+       			AC.error("Unzip en erreur de " + p + ":" + entry + " : ", e.message);
 			}
 		}.bind(this));
 	},
 	
 	selectCol4 : function() {
 		AC.info("Analyse des items de " + this.selCol.col + "/" + this.selCol.type);
-		var rt = [];
-		for(var t in this.selCol.data) {
-			var a = this.selCol.data[t];
+		const rt = [];
+		for(let t in this.selCol.data) {
+			const a = this.selCol.data[t];
 			rt.push({type:t, count:!Array.isArray(a) ? 1 : a.length});
 		}
-		rt.sort(function(a,b){
-			return a.type < b.type ? -1 : (a.type > b.type ? 1 : 0);
-		});
+		rt.sort((a,b) => a.type < b.type ? -1 : (a.type > b.type ? 1 : 0));
 		this.crecordtypes = rt;
 		if (this.crecordtypes.length > 0)
 			this.selRecordType =  this.crecordtypes[0];
@@ -455,36 +451,35 @@ Polymer({
 		this.selectRecordType3();
 	},
 	selectRecordType3 : function(){	
-		var fields = {};
-		var crecords = [];
-		var v = 0;
-		for(var rt in this.selCol.data){
-			var l = this.selCol.data[rt];
+		const fields = {};
+		let v = 0;
+		for(let rt in this.selCol.data){
+			let l = this.selCol.data[rt];
 			if (!Array.isArray(l))
 				l = [l];
-			for(var i = 0, x = null; x = l[i]; i++){
-				var vv = x.version;
+			for(let i = 0, x = null; x = l[i]; i++){
+				const vv = x.version;
 				if (vv && vv > v)
 					v = vv;
 			}
 		}
 		AC.info("Calcul de la version de " + this.selCol.col + "/" + this.selCol.type);
-		crecords = this.selCol.data[this.selRecordType.type];
+		let crecords = this.selCol.data[this.selRecordType.type];
 		if (!Array.isArray(crecords))
 			crecords = [crecords];
-		for(var i = 0, r = null; r = crecords[i]; i++){
+		for(let i = 0, r = null; r = crecords[i]; i++){
 			r.__index = i;
-			for(var f in r)
+			for(let f in r)
 				if (f != "ZZ" && !fields[f])
 					fields[f] = true;
 		}
-		var ff = []
-		var x = AC.sorts[this.selCol.type];
-		var keys = !x ? [] :( x[this.selRecordType.type] ? x[this.selRecordType.type] : []);
+		const ff = []
+		const x = AC.sorts[this.selCol.type];
+		const keys = !x ? [] :( x[this.selRecordType.type] ? x[this.selRecordType.type] : []);
 		AC.info("Recherche des champs de " + this.selCol.col + "/" + this.selCol.type);
 		this.ckeys = {};
-		for(var i = 0, k = null; k = keys[i]; i++){
-			var name = "_" + k.join("_");
+		for(let i = 0, k = null; k = keys[i]; i++){
+			const name = "_" + k.join("_");
 			this.ckeys[name] = k;
 			ff.push(name);
 		}
@@ -503,30 +498,28 @@ Polymer({
 	},
 	selectField : function(e){
 		this.selField = e.model.__data__.field;
-		var rx = [];
-		for(var i = 0, r = null; r = this.crecords[i]; i++) rx.push(r);
+		const rx = [];
+		for(let i = 0, r = null; r = this.crecords[i]; i++) rx.push(r);
 		this.sortRecords(rx, true);
 	},
 	sortRecords : function(crecords, hasSelRecord){
 		AC.info("Edition des records de " + this.selCol.col + "/" + 
 				this.selCol.type + "/" + this.selField);
-		var np = 0;
+		let np = 0;
 		if (crecords.length > 1) {
-			for(var i = 0, r = null; r = crecords[i]; i++)
+			for(let i = 0, r = null; r = crecords[i]; i++)
 				r.ZZ = this.editField(r, this.selField);
 			if (!hasSelRecord) {
-				crecords.sort(function(a,b){
-					return a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
-						(a.__index > b.__index ? 1 : (a.__index < b.__index ? -1 : 0)));
-				});
+				crecords.sort((a,b) =>
+					a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
+						(a.__index > b.__index ? 1 : (a.__index < b.__index ? -1 : 0))));
 			} else {
-				var isel = this.selRecord.__index;
-				crecords.sort(function(a,b){
-					return a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
+				const isel = this.selRecord.__index;
+				crecords.sort((a,b) =>
+					a.ZZ < b.ZZ ? -1 : (a.ZZ > b.ZZ ? 1 : 
 						(a.__index > b.__index || a.__index == isel ? 1 : 
-							(a.__index < b.__index || b.__index == isel ? -1 : 0)));
-				});
-				for(var i = 0, r = null; r = crecords[i]; i++)
+							(a.__index < b.__index || b.__index == isel ? -1 : 0))));
+				for(let i = 0, r = null; r = crecords[i]; i++)
 					if (r.__index == isel){
 						np = Math.floor(i / this.mxd);
 						break;
@@ -535,28 +528,27 @@ Polymer({
 		}
 		this.crecords = crecords;
 		this.setDisp(np, !hasSelRecord);
-		// AC.info("OK : " + this.selCol.col + "/" + this.selCol.type + "/" + this.selField);
 	},
 	editField : function(r, f){
 		if (!r || !f) return "";
 		if (f.charAt(0) == "_") {
-		var k = AC.linesview.ckeys ? AC.linesview.ckeys[f] : null;
+			const k = AC.linesview.ckeys ? AC.linesview.ckeys[f] : null;
 			if (k) {
-				var val = "";
-				for(var i = 0, f2 = ""; f2 = k[i]; i++)
+				let val = "";
+				for(let i = 0, f2 = ""; f2 = k[i]; i++)
 					val += AC.linesview.editField(r, f2) + " ";
 				return val;
 			}
 		}
-		var lg = AC.sorts.FieldSizes[f];
-		var v = r[f];
+		const lg = AC.sorts.FieldSizes[f];
+		const v = r[f];
 		if (typeof v == 'undefined') 
 			return lg == -2 ? "0" : "";
 		if (!lg) 
 			return v;
 		if (lg == -1)
 			return new Date(v).stdFormat() + " - " + v;
-		var vx = "" + v;
+		const vx = "" + v;
 		if (vx.length < lg)
 			return "            ".substring(0, lg - vx.length) + vx;
 		else

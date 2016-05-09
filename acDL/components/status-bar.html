@@ -25,6 +25,8 @@
 </template>
 
 <script>
+  'use strict'
+  
   Polymer({
     is: "status-bar",
     
@@ -37,19 +39,19 @@
 	},
     ready: function() {
     	AC.sb = this;
-    	AC.eventEmitter.on("sbError", function(ev){
+    	AC.eventEmitter.on("sbError", function(ev) {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = false;
     	}.bind(this));
-    	AC.eventEmitter.on("sbInfo", function(ev){
+    	AC.eventEmitter.on("sbInfo", function(ev) {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = true;
         	this.total = "";
         	this.done = "";
     	}.bind(this));
-    	AC.eventEmitter.on("sbProgress", function(ev){
+    	AC.eventEmitter.on("sbProgress", function(ev) {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = true;

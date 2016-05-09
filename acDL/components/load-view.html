@@ -70,6 +70,7 @@
 </dom-module>
 
 <script>
+'use strict'
 
 Polymer({
 	is : "load-view",
@@ -100,10 +101,8 @@ Polymer({
 		mimes: {type:Number, value:0},
 
 		lines : {type:Array, value:[]},
-//		zips : {type:Object, value:{}},
 		docs : {type:Array, value:[]},
 		batches : {type:Array, value:[]},
-//		nbZipFiles : {type:Number, value:0},
 
 		filtreSrc : {type:Object, value:{}},
 		urlDest : {type:String, value:""}
@@ -142,8 +141,7 @@ Polymer({
 		}
 		this.urlDest = AC.desktop.url(this.ptd);
 		this.name = AC.desktop.currentdump;
-		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
-		this.path = dp + this.name;
+		this.path = AC.desktop.mydp() + this.name;
 	},
 	
 	versdesktop : function(e){
@@ -151,8 +149,8 @@ Polymer({
 	},
 	
 	editv : function(v){
-		var v1 = "" + v;
-		var l = v1.length;
+		const v1 = "" + v;
+		const l = v1.length;
 		if (l > 6)
 			return v1.substring(0, l - 6) + "," + v1.substring(l - 6, l - 5) + "Mo";
 		if (l > 3)
@@ -174,17 +172,15 @@ Polymer({
 	
 	/* Confirmer **************************************/
 	showConfirm : function(){
-		var self = this;
-		return new Promise(function(resolve, reject){
-			self.$.confirmer.open();
-			self.resolveAlerter = resolve;
-			self.rejectAlerter = reject;
-		});
+		return new Promise(function(resolve, reject) {
+			this.$.confirmer.open();
+			this.resolveAlerter = resolve;
+			this.rejectAlerter = reject;
+		}.bind(this));
 	},
 
 	alerterClosing : function(e){
-		var x = e.detail;
-		if (x.confirmed)
+		if (e.detail.confirmed)
 			this.resolveAlerter(true);
 		else
 			this.rejectAlerter(false);
@@ -199,22 +195,22 @@ Polymer({
 
 	load2 : function(b){
 		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
-			if (err)
+			if (err) {
 				this.onError("Lecture de " + this.path + "/filtre.json impossible. " + err.message);
-			else {
-				try {
-					this.filtreSrc = JSON.parse(data);
-				} catch (e) {
-					this.onError("Erreur de syntaxe dans " + this.path + "/filtre.json impossible. " + err.message);
-					return;
-				}
-				if (this.encours(this.status)) return;
-				this.status = 1;
-				this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
-				var f = {}
-				if (this.versiond) f.versiond = this.versiond;
-				this.working();
-			};
+				return;
+			}
+			try {
+				this.filtreSrc = JSON.parse(data);
+			} catch (e) {
+				this.onError("Erreur de syntaxe dans " + this.path + "/filtre.json impossible. " + err.message);
+				return;
+			}
+			if (this.encours(this.status)) return;
+			this.status = 1;
+			this.srv = AC.desktop.newServer(this.ptd, this.name, this.onDone.bind(this), this.onError.bind(this));
+// 			var f = {}
+// 			if (this.versiond) f.versiond = this.versiond;
+			this.working();
 		}.bind(this));
 	},
 
@@ -251,20 +247,19 @@ Polymer({
 	},
 
 	onDone : function(text) {
-		var self = this;
 		switch (this.status){
 		case 2 : {
 			if (text){
 				try {
-					var stats = JSON.parse(text);
+					const stats = JSON.parse(text);
+					this.vc += stats.bytes ? stats.bytes : 0;
+					this.cells += stats.cells ? stats.cells : 0;
+					this.mimes += stats.mimes ? stats.mimes : 0;
+					this.nodes += stats.nodes ? stats.nodes : 0;
 				} catch(e){
 					this.onError("Retour de restauration d'une ligne : syntaxe incorrecte");
 					return;
 				}
-				this.vc += stats.bytes ? stats.bytes : 0;
-				this.cells += stats.cells ? stats.cells : 0;
-				this.mimes += stats.mimes ? stats.mimes : 0;
-				this.nodes += stats.nodes ? stats.nodes : 0;
 			}
 			this.batch ++;
 			if (this.batch == this.batches.length) {
@@ -290,7 +285,6 @@ Polymer({
 	},
 	
 	working : function(){
-		var self = this;
 		if (this.pause)
 			return;
 		switch (this.status){
@@ -298,57 +292,57 @@ Polymer({
 			this.phase = "Lecture du fichier lignes.json";
 			AC.info(this.phase);
 			AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
-				if (err)
+				if (err) {
 					this.onError("Lecture de " + this.path + "/lignes.json impossible. " + err.message);
-				else {
-					try {
-						this.lines = JSON.parse(data);
-					} catch (e) {
-						this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json impossible. " + err.message);
-						return;
-					}
-					this.nbl = this.lines.length;
-					this.status = this.nbl ? 2 : 3;
-					this.batch = -1;
-					this.cl = 0;
-					this.enPause();
-					this.working();
+					return;
 				}
+				try {
+					this.lines = JSON.parse(data);
+				} catch (e) {
+					this.onError("Erreur de syntaxe dans " + this.path + "/lignes.json impossible. " + err.message);
+					return;
+				}
+				this.nbl = this.lines.length;
+				this.status = this.nbl ? 2 : 3;
+				this.batch = -1;
+				this.cl = 0;
+				this.enPause();
+				this.working();
 			}.bind(this));
 			return;
 		}
 		case 2 : {
 			if (this.batch == -1){
-				var b = this.path + "/" + this.lines[this.cl] + "line/batches.json"
+				const b = this.path + "/" + this.lines[this.cl] + "line/batches.json"
 				AC.fs.readFile(b, 'utf-8', function(err, data) {
-					if (err)
+					if (err) {
 						this.onError("Lecture impossible de " + b + " : " + err.message);
-					else {
-						try {
-							this.batches = JSON.parse(data);
-						} catch (e) {
-							this.onError("Erreur de syntaxe dans " + b + " : " + err.message);
-							return;
-						}
-						if (this.batches.length == 0) {
-							this.cl++;
-							if (this.cl == this.nbl)
-								this.status = 3;
-						} else
-							this.batch = 0;
-						this.enPause();
-						this.working();
 						return;
 					}
+					try {
+						this.batches = JSON.parse(data);
+					} catch (e) {
+						this.onError("Erreur de syntaxe dans " + b + " : " + err.message);
+						return;
+					}
+					if (this.batches.length == 0) {
+						this.cl++;
+						if (this.cl == this.nbl)
+							this.status = 3;
+					} else
+						this.batch = 0;
+					this.enPause();
+					this.working();
+					return;
 				}.bind(this));
 				return;
 			}
-			var l = this.lines[this.cl];
-			var bx = this.batches[this.batch];
+			const l = this.lines[this.cl];
+			const bx = this.batches[this.batch];
 			if (bx) {
 				this.phase = "Chargement des cellules de la ligne " + l + " - lot : " + (this.batch + 1);
 				AC.progress(this.phase, "", (this.cl + 1) + "-" + (this.batch + 1) + "/" + this.batches.length, this.nbl);
-				var z = this.path + "/" + l + "line/B" + this.batch + ".zip";
+				const z = this.path + "/" + l + "line/B" + this.batch + ".zip";
 				this.srv.load(l, z, this.batch == 0);
 			} else {
 				this.onDone(""); // Le lot était vide, aucune cellule n'était présente
@@ -358,35 +352,35 @@ Polymer({
 		case 3 : {
 			this.phase = "Lecture du fichier docs.json";
 			AC.info(this.phase);
-			var p = this.path + "/docs.json";
+			const p = this.path + "/docs.json";
 			AC.fs.readFile(p, 'utf-8', function(err, data) {
-				if (err)
+				if (err) {
 					this.onError("Lecture impossible de " + p + " : " + err.message);
-				else {
-					try {
-						this.docs = JSON.parse(data);
-					} catch (e) {
-						this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
-						return;
-					}
-					this.nbd = this.docs.length;
-					this.status = 4;
-					this.enPause();
-					this.working();
+					return;
 				}
+				try {
+					this.docs = JSON.parse(data);
+				} catch (e) {
+					this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
+					return;
+				}
+				this.nbd = this.docs.length;
+				this.status = 4;
+				this.enPause();
+				this.working();
 			}.bind(this));
 			return;
 		}
 		case 4 : {
 			this.phase = "Restauration des documents";
 			AC.progress(this.phase, null, this.cd, this.nbd);
-			var doc = this.docs[this.cd];
-			var i = doc.lastIndexOf("-");
+			let doc = this.docs[this.cd];
+			let i = doc.lastIndexOf("-");
 			i = doc.lastIndexOf("-", i - 1);
 			i = doc.lastIndexOf("-", i - 1);
-			var d = doc.substring(i + 1, i + 5);
-			var fn = this.path + "/" + d + "/" + doc;
-			var stats = null;
+			const d = doc.substring(i + 1, i + 5);
+			let fn = this.path + "/" + d + "/" + doc;
+			let stats = null;
 			try {
 				stats = AC.fs.statSync(fn);
 			} catch (e) {

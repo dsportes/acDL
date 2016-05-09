@@ -102,6 +102,7 @@
 </dom-module>
 
 <script>
+'use strict';
 
 Polymer({
 	is : "detail-view",
@@ -152,8 +153,7 @@ Polymer({
 		this.dumpitem = AC.desktop.currentdumpitem;
 		this.ptd = this.dumpitem.ptd;
 		this.type = ["Production", "Test", "Développement"][this.ptd];
-		var dp = AC.desktop.dirpath.endsWith("/") ? AC.desktop.dirpath : AC.desktop.dirpath + "/";
-		this.path = dp + this.dumpitem.name;
+		this.path = AC.desktop.mydp() + this.dumpitem.name;
 		this.zips = {};
 		this.docs = [];
 		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
@@ -198,14 +198,14 @@ Polymer({
 	},
 	initView : function(){
 		this.documents = [];
-		for(var i = 0, d = null; d = this.docs[i]; i++){
-			var j = d.lastIndexOf("-");
+		for(let i = 0, d = null; d = this.docs[i]; i++){
+			let j = d.lastIndexOf("-");
 			j =  d.lastIndexOf("-", j - 1);
-			var k = d.lastIndexOf("-", j - 1);
-			var mois = d.substring(k + 1, k + 5);
-			var jour = d.substring(k + 5, k + 7);
-			var j = d.lastIndexOf("_", k - 1);
-			var orig = d.substring(0, j + 1);
+			const k = d.lastIndexOf("-", j - 1);
+			const mois = d.substring(k + 1, k + 5);
+			const jour = d.substring(k + 5, k + 7);
+			j = d.lastIndexOf("_", k - 1);
+			let orig = d.substring(0, j + 1);
 			orig = orig.replace(/_/g, ".");
 			this.documents.push({d:d, mois:mois, jour:jour, orig:orig, 
 				libmois:"20" + mois.substring(0,2) + "-" + mois.substring(2)});
@@ -214,34 +214,30 @@ Polymer({
 	},
 	changeSource : function(newValue, oldValue){
 		if (!this.documents) return;
-		var amois = {};
-		var lmois = [];
-		for(var i = 0, d = null; d = this.documents[i]; i++){
+		const amois = {};
+		const lmois = [];
+		for(let i = 0, d = null; d = this.documents[i]; i++){
 			if (!d.orig.startsWith(this.source))
 				continue;
-			var m = amois[d.mois];
+			let m = amois[d.mois];
 			if (!m){
-				var m = {mois:d.mois, lib:d.libmois, ljours:[], ajours:{} };
+				m = {mois:d.mois, lib:d.libmois, ljours:[], ajours:{} };
 				amois[d.mois] = m;
 				lmois.push(m);
 			}
-			var j = m.ajours[d.jour];
+			let j = m.ajours[d.jour];
 			if (!j){
-				var j = {jour:d.jour, val:d.mois + d.jour, docs:[] };
+				j = {jour:d.jour, val:d.mois + d.jour, docs:[] };
 				m.ajours[d.jour] = j;
 				m.ljours.push(j);				
 			}
 			j.docs.push(d);
 		}
 		if (lmois.length > 0) {
-			lmois.sort(function(a,b){
-				return a.mois < b.mois ? 1 : (a.mois > b.mois ? -1 : 0);
-			});
-			for(var i = 0, m = null; m = lmois[i]; i++) {
-				m.ljours.sort(function(a,b){
-					return a.jour < b.jour ? -1 : (a.jour > b.jour ? 1 : 0);
-				});
-				for(var k = 0, j = null; j = m[k]; k++) {
+			lmois.sort((a,b) => a.mois < b.mois ? 1 : (a.mois > b.mois ? -1 : 0) );
+			for(let i = 0, m = null; m = lmois[i]; i++) {
+				m.ljours.sort((a,b) => a.jour < b.jour ? -1 : (a.jour > b.jour ? 1 : 0));
+				for(let k = 0, j = null; j = m[k]; k++) {
 					if (j.docs.length > 2)
 						j.docs.sort();
 				}
@@ -263,13 +259,13 @@ Polymer({
 		this.selectedJour = e.model.__data__.jour.val;
 		this.selectedMois = this.selectedJour.substring(0,4);
 		var jj = this.selectedJour.substring(4);
-		var m = null;
-		var j = null;
+		let m = null;
+		let j = null;
 		this.ldocs = [];
-		for(var i = 0, x = null; x = this.lmois[i]; i++)
+		for(let i = 0, x = null; x = this.lmois[i]; i++)
 			if (x.mois == this.selectedMois){
 				m = x;
-				for(var k = 0, y = null; y = m.ljours[k]; k++){
+				for(let k = 0, y = null; y = m.ljours[k]; k++){
 					if (y.jour == jj) {
 						j = y;
 						break;
@@ -286,12 +282,12 @@ Polymer({
 		this.displayDoc();
 	},
 	displayDoc : function(){
-		var x = this.selectedDoc;
+		const x = this.selectedDoc;
 		if (!x) {
 			this.$.ifr.document = null;
 			return;
 		}
-		var fn = this.path + "/" + x.mois + "/" + x.d;
+		let fn = this.path + "/" + x.mois + "/" + x.d;
 		AC.fs.readFile(fn, function(err, data) {
 			if (err) {
 				if (err.code == "ENOENT") {
@@ -311,10 +307,9 @@ Polymer({
 	displayDoc2 : function(data, gz){
 		if (gz)
 			data = pako.inflate(data);
-		var html = AC.decoder.decode(data);
-		var doc = this.$.ifr.contentWindow.document;
+		const doc = this.$.ifr.contentWindow.document;
 		doc.open();
-		doc.write(html);
+		doc.write(AC.decoder.decode(data));
 		doc.close();
 	},
 	onError : function(err){
