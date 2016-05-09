@@ -39,25 +39,25 @@
 	},
     ready: function() {
     	AC.sb = this;
-    	AC.eventEmitter.on("sbError", function(ev) {
+    	AC.eventEmitter.on("sbError", (ev) => {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = false;
-    	}.bind(this));
-    	AC.eventEmitter.on("sbInfo", function(ev) {
+    	});
+    	AC.eventEmitter.on("sbInfo", (ev) => {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = true;
         	this.total = "";
         	this.done = "";
-    	}.bind(this));
-    	AC.eventEmitter.on("sbProgress", function(ev) {
+    	});
+    	AC.eventEmitter.on("sbProgress", (ev) => {
         	this.msg = ev.msg ? ev.msg : "";
         	this.detail = ev.detail ? ev.detail : "";
         	this.ok = true;
         	this.total = typeof ev.total == "undefined" ? "?" : "" + ev.total;
         	this.done = typeof ev.done == "undefined" ? "?" : "" + ev.done;
-    	}.bind(this));
+    	});
     },
     msgClass : function(ok){
     	return ok ? "msg" : "msg error";

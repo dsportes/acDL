@@ -322,7 +322,7 @@ Polymer({
 	selectLine3 : function(){
 		this.lpath = this.path + "/" + this.selLine + "line/";
 		const p = this.lpath + "Versions.json.gz";
-		AC.fs.readFile(p, function(err, data) {
+		AC.fs.readFile(p, (err, data) => {
 			if (err) {
 				AC.error("Chargement en erreur de " + p + " : " + err.message);
 				return;
@@ -338,7 +338,7 @@ Polymer({
 				}
 				this.$.vline.innerHTML = "Version ligne: " + new Date(vx).stdFormat();		
 				const p = this.lpath + "batches.json";
-				AC.fs.readFile(p, "utf-8", function(err, data) {
+				AC.fs.readFile(p, "utf-8", (err, data) => {
 					if (err) {
 						AC.error("Chargement en erreur de " + p + " : " + err.message);
 						return;
@@ -369,12 +369,12 @@ Polymer({
 						this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
 						return;
 					}
-				}.bind(this));
+				});
 			} catch (e){
 				this.onError("Erreur de syntaxe dans " + p + " : " + e.message);	
 				return;
 			}
-		}.bind(this));
+		});
 	},	
 	selectCol : function(e){
 		this.selCol = e.model.__data__.col;
@@ -396,7 +396,7 @@ Polymer({
 		const sc = this.selCol;
 		this.$.vcell.innerHTML = "Version cell : " + new Date(sc.version).stdFormat();		
 		const p = this.lpath + "B" + this.selCol.batch + ".zip";
-		AC.fs.readFile(p, function(err, data) {
+		AC.fs.readFile(p, (err, data) => {
 			if (err) {
 				AC.error("Lecture impossible de " + p + " : " + err.message);
 				return;
@@ -421,7 +421,7 @@ Polymer({
 			} catch (e) {
        			AC.error("Unzip en erreur de " + p + ":" + entry + " : ", e.message);
 			}
-		}.bind(this));
+		});
 	},
 	
 	selectCol4 : function() {

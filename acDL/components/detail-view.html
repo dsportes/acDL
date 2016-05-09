@@ -156,7 +156,7 @@ Polymer({
 		this.path = AC.desktop.mydp() + this.dumpitem.name;
 		this.zips = {};
 		this.docs = [];
-		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', function(err, data) {
+		AC.fs.readFile(this.path + "/filtre.json", 'utf-8', (err, data) => {
 			if (err)
 				this.onError("Lecture impossible de " + this.path + " : " + err.message);
 			else {
@@ -166,7 +166,7 @@ Polymer({
 					this.onError("Erreur de syntaxe dans " + self.path + "/filtre.json  : " + err.message);
 					return;
 				}
-				AC.fs.readFile(this.path + "/docs.json", 'utf-8', function(err, data) {
+				AC.fs.readFile(this.path + "/docs.json", 'utf-8', (err, data) => {
 					if (err)
 						this.onError("Lecture impossible de " + this.path + " : " + err.message);
 					else {
@@ -176,7 +176,7 @@ Polymer({
 							this.onError("Erreur de syntaxe dans " + this.path + "/docs.json : " + err.message);	
 						}
 					}
-					AC.fs.readFile(this.path + "/lignes.json", 'utf-8', function(err, data) {
+					AC.fs.readFile(this.path + "/lignes.json", 'utf-8', (err, data) => {
 						if (err)
 							this.onError("Lecture impossible de " + this.path + "/lignes : " + err.message);
 						else {
@@ -188,10 +188,10 @@ Polymer({
 								return;
 							}
 						}
-					}.bind(this));
-				}.bind(this));
+					});
+				});
 			};
-		}.bind(this));
+		});
 	},
 	versdesktop : function(e){
 		AC.desktop.backtodesktop();
@@ -288,21 +288,21 @@ Polymer({
 			return;
 		}
 		let fn = this.path + "/" + x.mois + "/" + x.d;
-		AC.fs.readFile(fn, function(err, data) {
+		AC.fs.readFile(fn, (err, data) => {
 			if (err) {
 				if (err.code == "ENOENT") {
 					fn += ".gz";
-					AC.fs.readFile(fn, function(err, data) {
+					AC.fs.readFile(fn, (err, data) => {
 						if (err) {
 							this.onError("Lecture de " + fn + err.message);
 						} else
 							this.displayDoc2(data, true);
-					}.bind(this));
+					});
 				} else
 					this.onError("Lecture de " + fn + err.message);
 			} else
 				this.displayDoc2(data, false);
-		}.bind(this));
+		});
 	},
 	displayDoc2 : function(data, gz){
 		if (gz)

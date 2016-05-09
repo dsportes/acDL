@@ -175,10 +175,10 @@ Polymer({
 		f.url = AC.desktop.url(this.ptd);
 		const x = JSON.stringify(f);
 		const p = this.srv.dirName + "filtre.json";
-		AC.fs.writeFile(p, x, function(err) {
+		AC.fs.writeFile(p, x, (err) => {
 			if (err)
 				this.onError("Ecriture impossible de " + p + " : " + err.message);
-		}.bind(this));
+		});
 		this.working();
 	},
 		
@@ -226,7 +226,7 @@ Polymer({
 			this.nbl = this.lines.length;
 			this.cl = 0;
 			const p = this.srv.dirName + "lignes.json";
-			AC.fs.writeFile(p, text, function(err) {
+			AC.fs.writeFile(p, text, (err) => {
 				if (err) {
 					this.onError("Ecriture impossible de " + p + " : " + err.message);
 					return;
@@ -243,7 +243,7 @@ Polymer({
 				this.enPause();
 				this.working();
 				return;
-			}.bind(this));
+			});
 			return;
 		}
 		case 2 : {
@@ -261,7 +261,7 @@ Polymer({
 			this.vc += text;
 			const line = this.lines[this.cl];
 			let p = this.srv.dirName + "/" + line + "line/B" + this.batch + ".zip";
-			AC.fs.readFile(p, function(err, data) {
+			AC.fs.readFile(p, (err, data) => {
 				if (err) {
 					AC.error("Lecture impossible de " + p + " : " + err.message);
 					return;
@@ -274,7 +274,7 @@ Polymer({
 				if (this.batch == this.batches.length){
 					p = this.srv.dirName + "/" + line + "line/batches.json";
 					const text = JSON.stringify(this.batches);
-					AC.fs.writeFile(p, text, function(err) {
+					AC.fs.writeFile(p, text, (err) => {
 						if (err) {
 							this.onError("Ecriture impossible de " + p + " : " + err.message);
 							return;
@@ -285,12 +285,12 @@ Polymer({
 								this.status = 4;
 							this.enPause();
 							this.working();
-					}.bind(this));
+					});
 				} else {
 					this.enPause();
 					this.working();
 				}
-			}.bind(this));
+			});
 			return;
 		}
 		case 4 : {
@@ -302,7 +302,7 @@ Polymer({
 			}
 			this.nbd = this.docs.length;
 			const p = this.srv.dirName + "docs.json";
-			AC.fs.writeFile(p, text, function(err) {
+			AC.fs.writeFile(p, text, (err) => {
 				if (err) {
 					this.onError("Ecriture impossible de " + p + " : " + err.message);
 					return;
@@ -311,7 +311,7 @@ Polymer({
 				this.enPause();
 				this.working();
 				return;
-			}.bind(this));
+			});
 			return;
 		}
 		case 5 : {
@@ -347,7 +347,7 @@ Polymer({
 		case 3 : {
 			if (this.batch == -1) {
 				const p = this.srv.dirName + this.lines[this.cl] + "line/Versions.json.gz";
-				AC.fs.readFile(p, null, function(err, data) {
+				AC.fs.readFile(p, null, (err, data) => {
 					if (err) {
 						this.onError("Lecture de impossible de " + p + " : " + err.message);
 						return;
@@ -359,7 +359,7 @@ Polymer({
 						if (this.batches.length) {
 							const b = this.srv.dirName + this.lines[this.cl] + "line/batches.json";
 							const text = JSON.stringify(this.batches);
-							AC.fs.writeFile(b, text, function(err) {
+							AC.fs.writeFile(b, text, (err) => {
 								if (err) {
 									this.onError("Impossible d'écrire " + b + " : " + err.message);
 									return;
@@ -368,7 +368,7 @@ Polymer({
 								this.status = 3;
 								this.enPause();
 								this.working();
-							}.bind(this));
+							});
 							return;
 						} else {
 							this.batch = -1;
@@ -382,7 +382,7 @@ Polymer({
 					} catch (e) {
 						this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
 					}
-				}.bind(this));
+				});
 				return;
 			}
 			const l = this.lines[this.cl];
@@ -410,7 +410,7 @@ Polymer({
 			}
 			this.phase = "Dump terminé avec succès, renommage du directory";
 			AC.info(this.phase);
-			AC.desktop.commitdir(this.name, this.partiel, function(err) {
+			AC.desktop.commitdir(this.name, this.partiel, (err) => {
 				const p1 = this.name;
 				if (err) {
 					this.onError("Impossible de renommer le directory " + p1 +
@@ -421,7 +421,7 @@ Polymer({
 					this.status = 9;
 					this.working();
 				}
-			}.bind(this));
+			});
 			return;
 		}
 		case 9 : {
