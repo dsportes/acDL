@@ -265,8 +265,9 @@
     ready: function() {
 		AC.desktop = this;
 		console.log(global.__dirname);
-		this.$.fileElem.addEventListener("change", () => {
-			this.scan(this.files[0].path);
+		this.$.fileElem.addEventListener("change", (ev) => {
+			const tg = ev.target; 
+			this.scan(tg.files[0].path);
 		});
 		this.homedir = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME" ];
 		this.prefsfile = this.homedir + "/.acSvgRst.json";

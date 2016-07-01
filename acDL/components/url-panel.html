@@ -26,7 +26,7 @@
 	
 </style>
 	<paper-dialog class="size-position" modal id="urlpanel">
-		<div class="title">URL / Mot de Passe : [[ptdtext]]</div>
+		<div class="title">URL / Mot de Passe : [[title(ptd)]]</div>
 		
 		<div class="label">URL du server :</div>
 		<div class="input"><input is="iron-input" value="{{url::input}}"></div>
@@ -34,7 +34,7 @@
 		<div class="input"><input is="iron-input" value="{{pwd::input}}"></div>
 		
 		<div>
-			<paper-button on-tap="valider" raised class$="[[validerclass(url,_url,pwd,_pwd)]]">Valider</paper-button>
+			<paper-button on-tap="valider" raised class$="{{validerclass(url,_url,pwd,_pwd)}}">Valider</paper-button>
 			<paper-button on-tap="fermer" raised class="blue ripple">Fermer</paper-button>
 		</div>
     </paper-dialog>
@@ -68,7 +68,11 @@
 
 		openPanel : function(ptd){
 			this.url = AC.desktop.url(ptd);
+			if (!this.url)
+				this.url = "";
 			this.pwd = AC.desktop.pwd(ptd);
+			if (!this.pwd)
+				this.pwd = "";
 			this._url = this.url;
 			this._pwd = this.pwd;
 			this.ptd = ptd;
