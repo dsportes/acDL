@@ -284,6 +284,19 @@ Polymer({
 		}
 	},
 	
+	filterdocs : function(docs) {
+		var x = [];
+		var dm = this.versiond.substring(2);
+		for(var i = 0, d = null; d = docs[i]; i++){
+			var j = d.lastIndexOf(".");
+			j = d.lastIndexOf("-", j - 1);
+			j = d.lastIndexOf("-", j - 1);
+			var dx = d.substring(j - 6, j);
+			if (dx >= dm) x.push(d);
+		}
+		return x;
+	},
+	
 	working : function(){
 		if (this.pause)
 			return;
@@ -359,7 +372,7 @@ Polymer({
 					return;
 				}
 				try {
-					this.docs = JSON.parse(data);
+					this.docs = this.filterdocs(JSON.parse(data));
 				} catch (e) {
 					this.onError("Erreur de syntaxe dans " + p + " : " + err.message);	
 					return;
